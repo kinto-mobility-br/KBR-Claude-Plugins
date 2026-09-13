@@ -39,7 +39,7 @@ Uma pessoa da KINTO, num Windows limpo com Claude Code e Python instalados, cons
 | Formato de distribuição | Um repositório que é marketplace e monorepo de plugins | Um repo por plugin; plugin monolítico |
 | Granularidade | Um plugin por domínio | Um plugin por skill |
 | Público da 1ª versão | Quem usa Claude Code (TI e Dados) | Empacotar também para o claude.ai (fica para depois, estrutura preparada) |
-| Segredos | Arquivo `.env` por usuário em `~/.kbr/secrets.env`, fora de qualquer repo | 1Password (só o Fábio tem); cofre do SO via `keyring` (dependência pip); `userConfig` nativo (escrita única, só leitura pelo plugin) |
+| Segredos | Arquivo `.env` por usuário em `~/.kbr/secrets.env`, fora de qualquer repo. Valor que começa com `op://` é referência ao 1Password, resolvida na hora — override por chave para quem tem o `op` | 1Password como padrão (só o Fábio tem); cofre do SO via `keyring` (dependência pip); `userConfig` nativo (escrita única, só leitura pelo plugin); interruptor global de backend (mais peças que o necessário) |
 | Proteção do arquivo | Hook `PreToolUse` distribuído pelo plugin + ACL do arquivo + regra `deny` opcional no settings do usuário | Só regra `deny` (plugin não consegue distribuir) |
 | Formato do arquivo | `CHAVE=valor` por linha | YAML (exige PyYAML); JSON estilo AppSettings (ruim de editar à mão) |
 | OAuth Zoho | Self Client individual por técnico | Cliente corporativo registrado pela TI (fica para depois; grava as mesmas chaves) |
@@ -207,6 +207,21 @@ Regras de leitura, e é isso que os testes cobrem:
 - Valor entre aspas simples ou duplas perde as aspas. Não há interpolação nem escape.
 - Chave válida: `[A-Z][A-Z0-9_]*`. Linha que não casa gera aviso no `status` e é ignorada na leitura.
 - Chave repetida: vale a última.
+- **Valor que começa com `op://`** é uma referência ao 1Password no formato
+  `op://<cofre>/<item>/<campo>`, o mesmo que `op run --env-file` aceita. O módulo resolve na hora
+  com `op read <referência>`. Isso permite que quem tem o 1Password, como o Fábio, aponte cada
+  chave para o cofre em vez de colar o valor, misturando referências e valores literais no mesmo
+  arquivo. Para o resto do time o arquivo funciona sem `op` instalado.
+
+Exemplo de arquivo de quem usa o 1Password:
+
+```dotenv
+# --- kbr-servicedesk ---
+SDP_CLIENT_ID=op://Kinto Brasil/Client Secret - Service Desk API/client-id
+SDP_CLIENT_SECRET=op://Kinto Brasil/Client Secret - Service Desk API/client-secret
+SDP_GRANT_CODE=
+SDP_REFRESH_TOKEN=op://Kinto Brasil/Client Secret - Service Desk API/refresh-token
+```
 
 ### 3.3 Módulo `kbr_secrets.py`
 
@@ -224,7 +239,23 @@ Claude Code na nuvem, onde não há arquivo; (2) `~/.kbr/secrets.env`. Se `obrig
 encontrou, lança `SegredoAusente(nome)`, cuja mensagem diz qual comando rodar
 (`/kbr-core:secrets status` e, para chaves `SDP_*`, `/kbr-servicedesk:configurar`).
 
+**Referências `op://`.** Se o valor obtido em qualquer das duas fontes começa com `op://`, o
+módulo chama `op read <referência>` e devolve o resultado. Regras:
+
+- A resolução é preguiçosa e por chave: só chama o `op` para a chave pedida, e guarda o resultado
+  em memória pelo tempo de vida do processo, para não abrir o 1Password três vezes numa chamada
+  que precisa de três chaves.
+- Se o `op` não está no `PATH`, ou sai com erro (cofre bloqueado, item inexistente), lança
+  `SegredoInacessivel(nome, motivo)` com mensagem em português dizendo que a chave aponta para o
+  1Password e o que fazer. A saída do `op` nunca é repassada na íntegra, só a primeira linha do
+  erro.
+- Escrita numa chave cujo valor atual é `op://`: quem grava (`autorizar`, por exemplo) chama
+  `op item edit` no item e campo apontados, e o arquivo continua com a referência. A referência
+  nunca é substituída por valor literal.
+
 `caminho_arquivo()` e `caminho_config()` centralizam os caminhos; nada mais no repo os monta.
+`gravar(nome, valor)` é a única função que escreve no arquivo ou no 1Password, e é por ela que
+`autorizar` passa.
 
 **Linha de comando** (o que a skill chama):
 
@@ -232,7 +263,7 @@ encontrou, lança `SegredoAusente(nome)`, cuja mensagem diz qual comando rodar
 |---|---|
 | `init` | Cria `~/.kbr/`, `secrets.env` com o cabeçalho, `config.json` vazio e `cache/`; aplica as permissões. Idempotente. |
 | `registrar --plugin <nome> --chaves A,B,C` | Acrescenta o bloco `# --- <nome> ---` com as chaves que faltam, valor vazio. Nunca altera valor existente nem reordena. Idempotente. |
-| `status [--plugin <nome>]` | Para cada chave: `preenchida` ou `vazia`, nunca o valor. Confere permissões, avisa linhas inválidas, e diz se o hook está ativo e se a regra `deny` existe no settings do usuário. Sai com código 1 se algo essencial faltar. |
+| `status [--plugin <nome>]` | Para cada chave: `preenchida`, `preenchida (1Password)` ou `vazia`, nunca o valor. Se há alguma referência `op://`, confere se o `op` está no `PATH` e responde, sem ler valor. Confere permissões, avisa linhas inválidas, e diz se o hook está ativo e se a regra `deny` existe no settings do usuário. Sai com código 1 se algo essencial faltar. |
 | `editar` | Abre `secrets.env` no editor padrão do sistema por dentro do Python (`os.startfile` no Windows; `open` ou `xdg-open` nos outros). O caminho nunca aparece num comando do chat. |
 | `proteger` | Grava `Read(~/.kbr/secrets.env)`, `Edit(~/.kbr/secrets.env)`, `Read(~/.kbr/cache/**)` e `Edit(~/.kbr/cache/**)` em `permissions.deny` do `~/.claude/settings.json`, preservando o resto do arquivo. `config.json` fica de fora, como no hook. Só é chamado depois de o usuário confirmar no chat. |
 
@@ -291,6 +322,9 @@ Skill curta, em PT-BR, que traduz `init`, `status`, `editar` e `proteger` em con
 - `editar` → roda `editar` e orienta: "cole os valores no editor, salve, feche e me avise".
 - Regra dura da skill: nunca pedir um valor de segredo no chat; se o usuário colar um por conta
   própria, orientar a apagar do arquivo e gerar outro, porque já está no transcript.
+- Uso avançado, documentado no README do plugin e não no wizard: quem tem o 1Password CLI pode
+  escrever referências `op://` no lugar dos valores. Referência não é segredo, então a skill pode
+  ajudar a montar uma a partir do nome do cofre, do item e do campo, se a pessoa pedir.
 
 ---
 
@@ -347,7 +381,7 @@ de 5 minutos. Cabeçalhos das chamadas: `Authorization: Zoho-oauthtoken <access>
 | `nota <nº> --arquivo <html> [--visivel-solicitante] --confirmar` | `POST /requests/<id>/notes` | Sem `--confirmar` só valida e mostra o que faria. |
 | `status <nº> "<status>" [--comentario <txt>] --confirmar` | `PUT /requests/<id>` | Status de espera (On Hold, Aguardando Aprovação) exigem `--comentario`, que vai em `onhold_scheduler`. |
 | `resolver <nº> --arquivo <html> --confirmar` | `PUT /requests/<id>` com `resolution` + status `Resolved` | |
-| `autorizar` | `POST token_url` com `grant_type=authorization_code` | Passo 6 do wizard: lê `SDP_GRANT_CODE`, `SDP_CLIENT_ID` e `SDP_CLIENT_SECRET`, grava `SDP_REFRESH_TOKEN` e apaga o grant code do arquivo. |
+| `autorizar` | `POST token_url` com `grant_type=authorization_code` | Passo 6 do wizard: lê `SDP_GRANT_CODE`, `SDP_CLIENT_ID` e `SDP_CLIENT_SECRET`, grava `SDP_REFRESH_TOKEN` por `kbr_secrets.gravar` (no arquivo, ou no 1Password se a chave for uma referência `op://`) e apaga o grant code do arquivo. |
 
 **Confirmação.** Nenhuma escrita acontece sem `--confirmar`. A skill só passa a flag depois de
 mostrar exatamente o que vai enviar e receber "s" do usuário.
@@ -490,7 +524,11 @@ cache por qualquer ferramenta.
 - `kbr_secrets`: parser do `.env` com BOM, `\r\n`, comentários, aspas, espaços, chave repetida,
   linha inválida; ordem de resolução variável de ambiente antes do arquivo; `registrar`
   idempotente e sem tocar valores; `init` idempotente; `status` nunca imprime valor (teste
-  procura o valor na saída e falha se achar).
+  procura o valor na saída e falha se achar). Referências `op://` com o `subprocess` simulado:
+  resolve chamando `op read` com a referência exata; cacheia por processo (segunda leitura não
+  chama o `op`); `op` ausente ou com erro gera `SegredoInacessivel` com mensagem em português e sem
+  repassar a saída inteira; `gravar` numa chave `op://` chama `op item edit` com cofre, item e
+  campo certos e deixa o arquivo intacto; `status` marca `preenchida (1Password)` sem chamar `op read`.
 - `proteger_secrets`: nega `Read` de `~/.kbr/secrets.env` com `~`, home absoluta, `%USERPROFILE%`,
   barras invertidas e maiúsculas; nega `Bash` com `cat`, `type`, `Get-Content`, redirecionamento e
   `python -c open(...)` que citem o caminho; permite `~/.kbr/config.json`; permite
