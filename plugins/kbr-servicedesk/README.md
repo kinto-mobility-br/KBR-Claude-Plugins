@@ -6,8 +6,9 @@ Gestor de chamados do ServiceDesk Plus Cloud da KINTO, dentro do Claude Code.
 
 - **`/kbr-servicedesk:sdp`** — o painel: lista seus chamados, mostra detalhe, adiciona nota,
   muda status e resolve. Nada é gravado sem você confirmar.
-- **`/kbr-servicedesk:configurar`** — o wizard de 8 passos que configura seu acesso. Feito para
-  quem nunca ouviu falar de OAuth.
+- **`/kbr-servicedesk:configurar`** — o passo a passo que te ensina a criar as próprias chaves
+  de acesso, em 8 etapas. Feito para quem nunca ouviu falar de OAuth. Tem também uma visão
+  geral, se você quiser só entender o que está envolvido antes de começar.
 
 ## Primeira vez
 

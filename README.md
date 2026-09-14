@@ -24,7 +24,7 @@ clonar os repositórios da KINTO.
 | Plugin | O que faz | Skills | Status |
 |---|---|---|---|
 | `kbr-core` | Segredos por usuário em `~/.kbr/secrets.env` e a proteção que impede o modelo de lê-los. Instalado junto com os outros, por dependência. | `/kbr-core:secrets` | disponível |
-| `kbr-servicedesk` | Gestor de chamados do ServiceDesk Plus por menu, com wizard de configuração para quem nunca mexeu com OAuth. | `/kbr-servicedesk:sdp`, `/kbr-servicedesk:configurar` | em construção — chega na Task 12 (empacotamento do plugin) |
+| `kbr-servicedesk` | Gestor de chamados do ServiceDesk Plus por menu, e um passo a passo que ensina você a criar as próprias chaves de acesso. | `/kbr-servicedesk:sdp`, `/kbr-servicedesk:configurar` | disponível |
 
 ## Pré-requisitos por máquina
 
