@@ -1,1 +1,8 @@
 .superpowers/
+__pycache__/
+*.py[cod]
+.venv/
+*.env
+!*.env.exemplo
+.DS_Store
+Thumbs.db
