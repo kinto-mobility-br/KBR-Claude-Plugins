@@ -436,6 +436,49 @@ def _buscar_chamados(token: str, status_pedido: str | None,
     return reunidos, truncado
 
 
+CAMPOS_QUERY = ["id", "display_id", "subject", "status", "requester", "technician",
+               "group", "category", "subcategory", "urgency", "priority",
+               "created_time", "resolved_time"]
+
+
+def _buscar_query(token: str, de_ms: str | None, ate_ms: str | None, campo_data: str,
+                  status: str | None, abertos: bool) -> tuple[list[dict], bool]:
+    """Busca chamados de toda a operação (todos os técnicos) para /kbr-servicedesk:query.
+
+    Ao contrário de `_buscar_chamados`: não filtra por técnico, o filtro de data é opcional
+    (a query pronta "abertos agora" não usa nenhum), e quando há filtro de status ele é ou
+    um valor exato (`status`) ou a exclusão dos finais (`abertos`) — nunca os dois juntos,
+    quem chama já garante isso.
+    """
+    criterios: list[dict] = []
+    if de_ms and ate_ms:
+        criterios.append({"field": campo_data, "condition": "between",
+                          "values": [de_ms, ate_ms]})
+    extra: dict | None = None
+    if abertos:
+        extra = {"field": "status.name", "condition": "is not", "values": STATUS_FINAIS}
+    elif status:
+        extra = {"field": "status.name", "condition": "is", "value": status}
+    if extra:
+        if criterios:
+            extra["logical_operator"] = "AND"
+        criterios.append(extra)
+    reunidos: list[dict] = []
+    inicio = 1
+    truncado = True
+    for _ in range(LIMITE_PAGINAS):
+        pedido = {"list_info": {"row_count": TAMANHO_PAGINA, "start_index": inicio,
+                                "get_total_count": True, "search_criteria": criterios,
+                                "fields_required": CAMPOS_QUERY}}
+        status_http, corpo = chamar("GET", "/requests", pedido, token)
+        reunidos.extend(_resultado(status_http, corpo, "requests", list))
+        if not campo(corpo, "list_info", "has_more_rows"):
+            truncado = False
+            break
+        inicio += TAMANHO_PAGINA
+    return reunidos, truncado
+
+
 # --------------------------------------------------------------------------- comandos
 
 def cmd_testar(_args) -> int:

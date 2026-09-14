@@ -315,6 +315,24 @@ CHAMADO_LISTA = {
     "list_info": {"has_more_rows": False},
 }
 
+CHAMADO_QUERY = {
+    "requests": [
+        {"display_id": "5001", "id": "173861000000000099",
+         "subject": "Erro ao gerar nota fiscal",
+         "status": {"name": "Closed"},
+         "requester": {"name": "Ciclana", "email_id": "ciclana@kintomobility.com.br"},
+         "technician": {"name": "Fulano de Tal"},
+         "group": {"name": "Financeiro"},
+         "category": {"name": "Sistemas"},
+         "subcategory": {"name": "Faturamento"},
+         "urgency": {"name": "Alta"},
+         "priority": {"name": "Alta"},
+         "created_time": {"display_value": "Sep 1, 2025 08:00 AM"},
+         "resolved_time": {"display_value": "Sep 5, 2025 09:00 AM"}},
+    ],
+    "list_info": {"has_more_rows": False},
+}
+
 
 class BaseComando(BaseSDP):
     def executar(self, *argumentos):
@@ -792,6 +810,113 @@ class TesteEscopos(BaseComando):
         dados = self.json_da_saida(saida)
         self.assertEqual(dados["escopos"], sdp_api.ESCOPOS)
         self.assertIn("api-console.zoho.com", dados["console"])
+
+
+class TesteBuscarQuery(BaseSDP):
+    def test_periodo_usa_uma_unica_condicao_between(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        sdp_api._buscar_query(
+            "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
+            "created_time", None, False)
+        entrada = json.loads(urllib.parse.parse_qs(
+            rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
+        criterios = entrada["list_info"]["search_criteria"]
+        condicoes = [c["condition"] for c in criterios]
+        self.assertIn("between", condicoes)
+        self.assertNotIn("greater than", condicoes)
+        self.assertNotIn("less than", condicoes)
+
+    def test_sem_periodo_nao_manda_criterio_de_data(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        sdp_api._buscar_query("acc-1", None, None, "created_time", None, True)
+        entrada = json.loads(urllib.parse.parse_qs(
+            rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
+        campos = [c["field"] for c in entrada["list_info"]["search_criteria"]]
+        self.assertNotIn("created_time", campos)
+        self.assertNotIn("resolved_time", campos)
+
+    def test_campo_data_resolved_time(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        sdp_api._buscar_query(
+            "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
+            "resolved_time", None, False)
+        entrada = json.loads(urllib.parse.parse_qs(
+            rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
+        criterio = entrada["list_info"]["search_criteria"][0]
+        self.assertEqual(criterio["field"], "resolved_time")
+
+    def test_abertos_exclui_status_finais(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        sdp_api._buscar_query("acc-1", None, None, "created_time", None, True)
+        entrada = json.loads(urllib.parse.parse_qs(
+            rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
+        criterio = entrada["list_info"]["search_criteria"][0]
+        self.assertEqual(criterio["condition"], "is not")
+        self.assertEqual(criterio["values"], sdp_api.STATUS_FINAIS)
+
+    def test_status_filtra_valor_exato(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        sdp_api._buscar_query("acc-1", None, None, "created_time", "On Hold", False)
+        entrada = json.loads(urllib.parse.parse_qs(
+            rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
+        criterio = entrada["list_info"]["search_criteria"][0]
+        self.assertEqual(criterio["condition"], "is")
+        self.assertEqual(criterio["value"], "On Hold")
+
+    def test_sem_status_nem_abertos_nao_filtra_status(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        sdp_api._buscar_query(
+            "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
+            "created_time", None, False)
+        entrada = json.loads(urllib.parse.parse_qs(
+            rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
+        campos = [c["field"] for c in entrada["list_info"]["search_criteria"]]
+        self.assertNotIn("status.name", campos)
+
+    def test_nao_filtra_por_tecnico(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        sdp_api._buscar_query(
+            "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
+            "created_time", None, False)
+        entrada = json.loads(urllib.parse.parse_qs(
+            rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
+        campos = [c["field"] for c in entrada["list_info"]["search_criteria"]]
+        self.assertNotIn("technician.name", campos)
+
+    def test_fields_required_cobre_todas_as_colunas_do_csv(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        sdp_api._buscar_query(
+            "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
+            "created_time", None, False)
+        entrada = json.loads(urllib.parse.parse_qs(
+            rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
+        pedidos = set(entrada["list_info"]["fields_required"])
+        # As colunas do CSV vêm de: display_id, subject, requester, technician, group,
+        # category, subcategory, status, urgency, priority, created_time, resolved_time.
+        necessarios = {"display_id", "subject", "requester", "technician", "group",
+                       "category", "subcategory", "status", "urgency", "priority",
+                       "created_time", "resolved_time"}
+        self.assertTrue(necessarios.issubset(pedidos))
+
+    def test_pagina_enquanto_houver_mais(self):
+        pagina1 = {"requests": CHAMADO_QUERY["requests"], "list_info": {"has_more_rows": True}}
+        pagina2 = {"requests": CHAMADO_QUERY["requests"], "list_info": {"has_more_rows": False}}
+        self.rede(pagina1, pagina2)
+        chamados, truncado = sdp_api._buscar_query(
+            "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
+            "created_time", None, False)
+        self.assertEqual(len(chamados), 2)
+        self.assertFalse(truncado)
+
+    def test_paginacao_tem_teto_e_sinaliza_truncamento(self):
+        sempre_mais = {"requests": CHAMADO_QUERY["requests"], "list_info": {"has_more_rows": True}}
+        rede = self.rede(*([sempre_mais] * sdp_api.LIMITE_PAGINAS))
+        chamados, truncado = sdp_api._buscar_query(
+            "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
+            "created_time", None, False)
+        self.assertTrue(truncado)
+        self.assertEqual(len(chamados), sdp_api.LIMITE_PAGINAS)
+        self.assertEqual(len(rede.chamadas), sdp_api.LIMITE_PAGINAS)
 
 
 if __name__ == "__main__":
