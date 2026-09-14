@@ -347,6 +347,17 @@ class TesteListar(BaseComando):
         self.assertIn("Resolved", url)
         self.assertIn("is not", url)
 
+    def test_exclui_canceled_com_grafia_americana(self):
+        # Achado ao vivo em 2026-09-14: o ServiceDesk da KINTO usa "Canceled" (L
+        # simples), não "Cancelled" (L duplo). Com a grafia errada o filtro "is not"
+        # não dava erro nenhum, só não excluía ninguém — 335 chamados cancelados
+        # vazavam como "abertos". Trava a grafia certa para não regredir em silêncio.
+        rede = self.rede(TOKEN_OK, CHAMADO_LISTA)
+        self.executar("listar")
+        url = urllib.parse.unquote_plus(rede.chamadas[1]["url"])
+        self.assertIn("Canceled", url)
+        self.assertNotIn("Cancelled", url)
+
     def test_todos_nao_exclui_nada(self):
         rede = self.rede(TOKEN_OK, CHAMADO_LISTA)
         self.executar("listar", "--todos")

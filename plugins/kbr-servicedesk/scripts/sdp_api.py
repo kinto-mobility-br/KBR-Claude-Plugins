@@ -273,7 +273,13 @@ def chamar(metodo: str, caminho: str, input_data: dict | None, token: str) -> tu
 
 # --------------------------------------------------------------------------- ajudantes
 
-STATUS_FINAIS = ["Resolved", "Closed", "Cancelled"]
+STATUS_FINAIS = ["Resolved", "Closed", "Canceled"]
+# ^ "Canceled" (L simples, grafia americana), não "Cancelled" (L duplo, britânica).
+# Verificado ao vivo em 2026-09-14: com "Cancelled" o filtro "is not" não dava erro,
+# mas também não excluía nada — o ServiceDesk da KINTO usa a grafia americana (coerente
+# com o data center US da Zoho), então nenhum chamado tinha esse status exato e o filtro
+# vazava 335 chamados cancelados como se fossem "abertos" (total_count 517 vs 182 reais).
+# Se um dia o SDP usar as duas grafias ao mesmo tempo, listar as duas aqui.
 
 
 def limpo(bruto: str, limite: int = 3000) -> str:
@@ -399,13 +405,8 @@ def _buscar_chamados(token: str, status_pedido: str | None,
         criterios.append({"field": "status.name", "condition": "is",
                           "value": status_pedido, "logical_operator": "AND"})
     elif not todos:
-        # Não verificado contra o SDP real (Task 9, Step 5 — sem credenciais neste ambiente).
-        # Se o SDP recusar "is not" com "values" (lista), trocar por três critérios
-        # encadeados, um por status, com "value" (singular) cada:
-        #     for final in STATUS_FINAIS:
-        #         criterios.append({"field": "status.name", "condition": "is not",
-        #                           "value": final, "logical_operator": "AND"})
-        # e ajustar test_exclui_status_finais_por_padrao para conferir os três nomes na URL.
+        # Verificado contra o SDP real da KINTO em 2026-09-14: "is not" com "values"
+        # (lista) funciona sem erro — mas a forma NÃO é o único jeito de errar aqui.
         criterios.append({"field": "status.name", "condition": "is not",
                           "values": STATUS_FINAIS, "logical_operator": "AND"})
     reunidos: list[dict] = []
