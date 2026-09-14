@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 PREFIXO_OP = "op://"
@@ -122,5 +124,80 @@ def obter(nome: str, obrigatorio: bool = True) -> str | None:
     return bruto
 
 
+def _rodar_op(argumentos: list[str]):
+    """Chama o 1Password CLI. Isolado numa função para os testes substituírem."""
+    return subprocess.run(["op", *argumentos], capture_output=True, text=True)
+
+
+def op_disponivel() -> bool:
+    return shutil.which("op") is not None
+
+
+def _partes_op(referencia: str, nome: str) -> tuple[str, str, str]:
+    partes = referencia[len(PREFIXO_OP):].split("/")
+    if len(partes) != 3 or not all(parte.strip() for parte in partes):
+        raise SegredoInacessivel(
+            nome, f"referência mal formada (esperado op://cofre/item/campo)")
+    return partes[0], partes[1], partes[2]
+
+
+def _motivo_da_falha(processo) -> str:
+    linhas = (processo.stderr or "").strip().splitlines()
+    return linhas[0] if linhas else f"o comando op saiu com código {processo.returncode}"
+
+
 def _resolver_op(referencia: str, nome: str) -> str:
-    raise SegredoInacessivel(nome, "suporte a op:// ainda não implementado")
+    if referencia in _cache_op:
+        return _cache_op[referencia]
+    _partes_op(referencia, nome)  # valida o formato antes de chamar o op
+    try:
+        processo = _rodar_op(["read", referencia])
+    except FileNotFoundError:
+        raise SegredoInacessivel(
+            nome, "o comando 'op' não está instalado ou não está no PATH") from None
+    if processo.returncode != 0:
+        raise SegredoInacessivel(nome, _motivo_da_falha(processo))
+    valor = (processo.stdout or "").strip()
+    if not valor:
+        raise SegredoInacessivel(nome, "o 1Password devolveu um valor vazio")
+    _cache_op[referencia] = valor
+    return valor
+
+
+def gravar(nome: str, valor: str) -> None:
+    """Grava um segredo. Se a chave aponta para o 1Password, grava lá.
+
+    A referência op:// NUNCA é substituída por valor literal no arquivo.
+    """
+    atual = (ler_arquivo().get(nome, "") or "").strip()
+    if atual.startswith(PREFIXO_OP):
+        _gravar_op(atual, valor, nome)
+        _cache_op[atual] = valor
+        return
+    _gravar_arquivo(nome, valor)
+
+
+def _gravar_op(referencia: str, valor: str, nome: str) -> None:
+    cofre, item, campo = _partes_op(referencia, nome)
+    try:
+        processo = _rodar_op(["item", "edit", item, "--vault", cofre, f"{campo}={valor}"])
+    except FileNotFoundError:
+        raise SegredoInacessivel(
+            nome, "o comando 'op' não está instalado ou não está no PATH") from None
+    if processo.returncode != 0:
+        raise SegredoInacessivel(nome, _motivo_da_falha(processo))
+
+
+def _gravar_arquivo(nome: str, valor: str) -> None:
+    caminho = caminho_arquivo()
+    texto = caminho.read_text(encoding="utf-8") if caminho.exists() else CABECALHO
+    linhas = texto.splitlines()
+    padrao = re.compile(rf"^\s*{re.escape(nome)}\s*=")
+    for indice, linha in enumerate(linhas):
+        if padrao.match(linha):
+            linhas[indice] = f"{nome}={valor}"
+            break
+    else:
+        linhas.append(f"{nome}={valor}")
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho.write_text("\n".join(linhas) + "\n", encoding="utf-8")
