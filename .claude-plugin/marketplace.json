@@ -1,0 +1,19 @@
+{
+  "name": "kinto-brasil",
+  "description": "Plugins do Claude Code da KINTO Brasil: documentação, ServiceDesk, design systems",
+  "owner": { "name": "KINTO Brasil — TI" },
+  "plugins": [
+    {
+      "name": "kbr-core",
+      "description": "Segredos por usuário em ~/.kbr/secrets.env e proteção contra leitura pelo modelo",
+      "source": "./plugins/kbr-core",
+      "category": "productivity"
+    },
+    {
+      "name": "kbr-servicedesk",
+      "description": "Gestor de chamados do ServiceDesk Plus por menu, com wizard de configuração",
+      "source": "./plugins/kbr-servicedesk",
+      "category": "productivity"
+    }
+  ]
+}

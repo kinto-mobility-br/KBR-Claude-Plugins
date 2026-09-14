@@ -1,0 +1,28 @@
+name: validar
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cópias vendorizadas em sincronia
+        run: python scripts/verificar_shared.py
+
+      - name: Testes dos plugins
+        run: python scripts/testar.py
+
+      - name: Instalar o Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validar plugins e marketplace
+        run: python scripts/validar.py
