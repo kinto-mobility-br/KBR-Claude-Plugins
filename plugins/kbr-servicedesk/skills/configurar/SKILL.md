@@ -410,14 +410,27 @@ bloco fácil de copiar, e diga que é essa linha inteira que vai no próximo pas
 **Por quê:** a Zoho não entrega o acesso definitivo de uma vez. Ela dá um código curto, válido
 por poucos minutos, que eu troco pelo acesso permanente no passo 016.
 
-**Sem comando — este é seu.** Peça, uma instrução por vez:
+⚠️ **Nunca conte com o que foi mostrado no passo 012 ainda estar visível.** A pessoa pode ter
+rolado a tela, o passo 012 pode ter acontecido há minutos, e ninguém deveria precisar caçar uma
+mensagem anterior no meio de uma tarefa no navegador. **Rode a leitura de novo agora** (é
+comando de leitura, não precisa pedir permissão) e mostre a lista **dentro deste mesmo passo**,
+antes de qualquer instrução:
+
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/sdp_api.py" escopos
+```
+
+Apresente o `escopos_em_uma_linha` num bloco de código isolado, só ele, fácil de copiar com um
+clique — não misture com o resto do texto do passo.
+
+**Sem comando de execução — o resto deste passo é seu.** Peça, uma instrução por vez:
 
 > 🗂️ Na mesma tela da Zoho, no alto, há três abas: **Client Secret**, **Generate Code** e
 > **Settings**. Abra **Generate Code**. Se você fechou a aba, volte em
 > **https://api-console.zoho.com** e clique no cliente que acabou de criar.
 >
-> 📥 No campo **Scope**, cole a linha de permissões que acabei de mostrar. Ela é longa e vai
-> inteira numa linha só, sem quebrar e sem espaço.
+> 📥 No campo **Scope**, cole a linha de permissões que está logo acima, nesta mesma mensagem.
+> Ela é longa e vai inteira numa linha só, sem quebrar e sem espaço.
 >
 > ⏲️ Em **Time Duration**, escolha **10 minutes**.
 >
