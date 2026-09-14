@@ -985,5 +985,73 @@ class TesteEscreverCsv(unittest.TestCase):
         self.assertTrue(caminho.is_file())
 
 
+class TesteArquivoPadrao(unittest.TestCase):
+    def test_com_periodo(self):
+        caminho = sdp_api._arquivo_padrao("2026-09-01", "2026-10-01")
+        self.assertEqual(caminho.name, "chamados_2026-09-01_a_2026-10-01.csv")
+
+    def test_sem_periodo(self):
+        caminho = sdp_api._arquivo_padrao(None, None)
+        self.assertEqual(caminho.name, "chamados.csv")
+
+
+class TesteCmdQuery(BaseComando):
+    def test_periodo_grava_csv_e_devolve_json(self):
+        self.rede(TOKEN_OK, CHAMADO_QUERY)
+        destino = Path(self.tmp.name) / "saida.csv"
+        codigo, saida = self.executar(
+            "query", "--de", "2026-09-01", "--ate", "2026-10-01", "--arquivo", str(destino))
+        self.assertEqual(codigo, 0)
+        dados = self.json_da_saida(saida)
+        self.assertEqual(dados["arquivo"], str(destino.resolve()))
+        self.assertEqual(dados["linhas"], 1)
+        self.assertFalse(dados["truncado"])
+        self.assertTrue(destino.is_file())
+
+    def test_de_sem_ate_e_erro(self):
+        codigo, saida = self.executar("query", "--de", "2026-09-01")
+        self.assertEqual(codigo, 1)
+        erro = self.json_da_saida(saida)["erro"]
+        self.assertIn("--de", erro)
+        self.assertIn("--ate", erro)
+
+    def test_ate_sem_de_e_erro(self):
+        codigo, saida = self.executar("query", "--ate", "2026-10-01")
+        self.assertEqual(codigo, 1)
+
+    def test_abertos_e_status_sao_mutuamente_exclusivos(self):
+        captura = io.StringIO()
+        with contextlib.redirect_stderr(captura), self.assertRaises(SystemExit) as ctx:
+            sdp_api.main(["query", "--abertos", "--status", "On Hold"])
+        self.assertEqual(ctx.exception.code, 2)
+        self.assertIn("not allowed with argument", captura.getvalue())
+
+    def test_sem_periodo_nem_abertos_nem_status_funciona(self):
+        self.rede(TOKEN_OK, CHAMADO_QUERY)
+        destino = Path(self.tmp.name) / "saida.csv"
+        codigo, saida = self.executar("query", "--arquivo", str(destino))
+        self.assertEqual(codigo, 0)
+        self.assertEqual(self.json_da_saida(saida)["linhas"], 1)
+
+    def test_nenhuma_chamada_de_escrita_e_alcancavel(self):
+        destino = Path(self.tmp.name) / "saida.csv"
+        # Cachear token para evitar chamada POST de autenticação
+        caminho_token = kbr_secrets.caminho_cache() / "sdp_access_token.json"
+        caminho_token.write_text(json.dumps({"access_token": "acc-1",
+                                             "expira_em": time.time() + 3600}), encoding="utf-8")
+        rede = self.rede(CHAMADO_QUERY)
+        self.executar("query", "--de", "2026-09-01", "--ate", "2026-10-01",
+                      "--arquivo", str(destino))
+        metodos = {chamada["metodo"] for chamada in rede.chamadas}
+        self.assertEqual(metodos, {"GET"})
+
+    def test_nao_aceita_confirmar(self):
+        captura = io.StringIO()
+        with contextlib.redirect_stderr(captura), self.assertRaises(SystemExit) as ctx:
+            sdp_api.main(["query", "--confirmar"])
+        self.assertEqual(ctx.exception.code, 2)
+        self.assertIn("unrecognized arguments", captura.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

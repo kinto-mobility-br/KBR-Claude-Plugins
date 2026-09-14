@@ -473,6 +473,12 @@ def _escrever_csv(caminho: Path, chamados: list[dict]) -> None:
             escritor.writerow(_resumir_query(bruto))
 
 
+def _arquivo_padrao(de: str | None, ate: str | None) -> Path:
+    if de and ate:
+        return Path(f"chamados_{de}_a_{ate}.csv")
+    return Path("chamados.csv")
+
+
 def _buscar_query(token: str, de_ms: str | None, ate_ms: str | None, campo_data: str,
                   status: str | None, abertos: bool) -> tuple[list[dict], bool]:
     """Busca chamados de toda a operação (todos os técnicos) para /kbr-servicedesk:query.
@@ -761,6 +767,22 @@ def cmd_escopos(_args) -> int:
     return 0
 
 
+def cmd_query(args) -> int:
+    de, ate = args.de, args.ate
+    if bool(de) != bool(ate):
+        raise ErroSDP('Informe "--de" e "--ate" juntos, ou nenhum dos dois.')
+    token = access_token()
+    de_ms = _data_para_ms(de) if de else None
+    ate_ms = _data_para_ms(ate) if ate else None
+    brutos, truncado = _buscar_query(
+        token, de_ms, ate_ms, args.campo_data, args.status, args.abertos)
+    caminho = Path(args.arquivo) if args.arquivo else _arquivo_padrao(de, ate)
+    _escrever_csv(caminho, brutos)
+    _imprimir({"arquivo": str(caminho.resolve()), "linhas": len(brutos),
+               "truncado": truncado})
+    return 0
+
+
 # --------------------------------------------------------------------------- entrada
 
 def _imprimir(dados: dict) -> None:
@@ -802,12 +824,24 @@ def construir_parser() -> argparse.ArgumentParser:
     sub.add_parser("autorizar", help="troca o código de autorização por acesso permanente")
     sub.add_parser("escopos", help="mostra os escopos a marcar no console da Zoho")
 
+    query = sub.add_parser(
+        "query", help="extrai chamados de toda a operação para CSV (sem filtro de técnico)")
+    query.add_argument("--de", default=None, help="data inicial, AAAA-MM-DD (inclusiva)")
+    query.add_argument("--ate", default=None, help="data final, AAAA-MM-DD (exclusiva)")
+    query.add_argument("--campo-data", dest="campo_data", default="created_time",
+                       choices=["created_time", "resolved_time"])
+    grupo_status = query.add_mutually_exclusive_group()
+    grupo_status.add_argument("--status", default=None, help="filtra por um status exato")
+    grupo_status.add_argument("--abertos", action="store_true",
+                              help="só os chamados ainda não finalizados")
+    query.add_argument("--arquivo", default=None, help="caminho do CSV de saída")
+
     return parser
 
 
 COMANDOS = {"testar": cmd_testar, "listar": cmd_listar, "detalhe": cmd_detalhe,
             "nota": cmd_nota, "status": cmd_status, "resolver": cmd_resolver,
-            "autorizar": cmd_autorizar, "escopos": cmd_escopos}
+            "autorizar": cmd_autorizar, "escopos": cmd_escopos, "query": cmd_query}
 
 
 def main(argumentos: list[str] | None = None) -> int:
