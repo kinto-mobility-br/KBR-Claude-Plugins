@@ -210,8 +210,8 @@ def aplicar_permissoes(base: Path) -> list[str]:
     """Restringe a pasta ao usuário atual. Devolve avisos (nunca levanta)."""
     avisos: list[str] = []
     if os.name == "nt":
-        usuario = os.environ.get("USERNAME") or getpass.getuser()
         try:
+            usuario = os.environ.get("USERNAME") or getpass.getuser()
             processo = subprocess.run(
                 ["icacls", str(base), "/inheritance:r", "/grant:r", f"{usuario}:(OI)(CI)F"],
                 capture_output=True, text=True)
@@ -219,7 +219,7 @@ def aplicar_permissoes(base: Path) -> list[str]:
                 avisos.append("não consegui restringir a pasta ao seu usuário com o icacls")
         except FileNotFoundError:
             avisos.append("icacls não encontrado; a pasta ficou com as permissões herdadas")
-        except OSError as erro:
+        except (OSError, UnicodeDecodeError) as erro:
             avisos.append(
                 f"falha ao rodar o icacls ({erro}); a pasta ficou com as permissões herdadas")
     else:
@@ -241,7 +241,7 @@ def conferir_permissoes(base: Path) -> list[str]:
     if os.name == "nt":
         try:
             processo = subprocess.run(["icacls", str(base)], capture_output=True, text=True)
-        except OSError:
+        except (OSError, UnicodeDecodeError):
             return []
         if processo.returncode != 0:
             return []

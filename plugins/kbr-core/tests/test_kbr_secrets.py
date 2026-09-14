@@ -331,10 +331,12 @@ class TestePermissoesComSubprocessSubstituido(unittest.TestCase):
         self.base = Path(self.tmp.name)
         self._os_name_original = kbr_secrets.os.name
         self._subprocess_run_original = kbr_secrets.subprocess.run
+        self._getuser_original = kbr_secrets.getpass.getuser
 
     def tearDown(self):
         kbr_secrets.os.name = self._os_name_original
         kbr_secrets.subprocess.run = self._subprocess_run_original
+        kbr_secrets.getpass.getuser = self._getuser_original
         self.tmp.cleanup()
 
     @staticmethod
@@ -363,6 +365,25 @@ class TestePermissoesComSubprocessSubstituido(unittest.TestCase):
         avisos = kbr_secrets.aplicar_permissoes(self.base)
         self.assertEqual(len(avisos), 1)
 
+    def test_aplicar_permissoes_windows_getpass_getuser_levanta_vira_aviso(self):
+        # sem USERNAME no ambiente, o `or` cai para getpass.getuser() — que no Windows
+        # pode levantar OSError se USERNAME/LOGNAME/USER/LNAME estiverem todos ausentes
+        # (não há fallback via `pwd` nessa plataforma).
+        kbr_secrets.os.name = "nt"
+        kbr_secrets.subprocess.run = self._run_falso(codigo=0)
+
+        def _getuser_que_falha():
+            raise OSError("não foi possível determinar o usuário")
+
+        kbr_secrets.getpass.getuser = _getuser_que_falha
+        usuario_original = os.environ.pop("USERNAME", None)
+        try:
+            avisos = kbr_secrets.aplicar_permissoes(self.base)
+        finally:
+            if usuario_original is not None:
+                os.environ["USERNAME"] = usuario_original
+        self.assertEqual(len(avisos), 1)
+
     def test_aplicar_permissoes_posix_chmod_levanta_vira_aviso(self):
         kbr_secrets.os.name = "posix"
         original_chmod = Path.chmod
@@ -387,6 +408,25 @@ class TestePermissoesComSubprocessSubstituido(unittest.TestCase):
         kbr_secrets.os.name = "nt"
         kbr_secrets.subprocess.run = self._run_falso(saida="Strix\\fabioabr:(OI)(CI)(F)")
         avisos = kbr_secrets.conferir_permissoes(self.base)
+        self.assertEqual(avisos, [])
+
+    def test_conferir_permissoes_posix_stat_levanta_nao_gera_aviso(self):
+        # `base.stat()` pode levantar (pasta removida na janela entre chamadas, permissão
+        # negada etc.). O tratamento existente devolve lista vazia nesse caso — "não consigo
+        # checar" não é o mesmo que "encontrei um problema" — o mesmo padrão já usado no ramo
+        # Windows acima quando o icacls falha. O que este teste garante é a parte que faltava
+        # cobrir: nenhuma exceção escapa de `conferir_permissoes`.
+        kbr_secrets.os.name = "posix"
+        original_stat = Path.stat
+
+        def stat_que_falha(self):
+            raise PermissionError("permissão negada")
+
+        Path.stat = stat_que_falha
+        try:
+            avisos = kbr_secrets.conferir_permissoes(self.base)
+        finally:
+            Path.stat = original_stat
         self.assertEqual(avisos, [])
 
 
