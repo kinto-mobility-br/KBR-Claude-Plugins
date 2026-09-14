@@ -99,12 +99,23 @@ pelo menos <N>" no cabeçalho.
 
 ## Quando algo dá errado
 
+**A primeira regra vale para todos os casos: mostre o texto do erro como está.** Ele já foi
+escrito em PT-BR para o técnico e costuma dizer o passo exato a refazer. Reescrever com suas
+palavras perde essa instrução.
+
 | O que o script diz | O que fazer |
 |---|---|
-| Menciona `/kbr-servicedesk:configurar` | Credencial ausente ou inválida: leve para a opção 6 |
+| Menciona `/kbr-servicedesk:configurar`, ou "wizard", ou "passo 4/5/6" | Credencial ausente, inválida ou revogada: leve para a opção 6 |
+| "Client ID ou Client Secret incorretos" | Opção 6, passo 4 do wizard |
+| "O acesso foi revogado" (no 1Password ou na Zoho) | Opção 6, passos 5 e 6 do wizard |
+| "O cliente não tem os escopos necessários" / "não tem permissão" | Opção 6, passo 5, com a lista completa de escopos |
 | "O acesso foi revogado ou o token venceu" | Opção 6, passos 5 e 6 do wizard |
 | "Não encontrei o chamado" | Confirme o número com o usuário |
 | "é de espera: o ServiceDesk exige um comentário" | Pergunte o motivo e repita com `--comentario` |
 | "não está salvo em UTF-8" | Peça para salvar o arquivo de novo em UTF-8 e repetir |
 | "Não consegui falar com o ServiceDesk" | Rede ou VPN; ofereça tentar de novo |
+| "não parece ter sido o ServiceDesk quem respondeu" | Proxy ou portal cativo na frente; confira a VPN e tente de novo |
 | Qualquer outro `{"erro": ...}` | Mostre o texto como está e ofereça tentar de novo ou abrir pelo portal |
+
+⚠️ **Erro de autenticação nunca se resolve tentando de novo.** Se o texto fala em acesso,
+token, escopo, Client ID ou Client Secret, o caminho é a opção 6 — não repetir o comando.
