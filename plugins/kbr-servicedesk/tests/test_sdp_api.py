@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Testes do acesso à API do ServiceDesk Plus."""
+import contextlib
 import io
 import json
 import os
@@ -8,6 +9,7 @@ import tempfile
 import time
 import unittest
 import urllib.error
+import urllib.parse
 from pathlib import Path
 
 RAIZ_PLUGIN = Path(__file__).resolve().parents[1]
@@ -271,6 +273,165 @@ class TesteCorpoNaoJson(BaseSDP):
         self.assertNotIn("<html>", texto)
         self.assertIn("proxy", texto.lower())
         self.assertEqual(len(rede.chamadas), 2)
+
+
+TOKEN_OK = {"access_token": "acc-1", "expires_in": 3600}
+
+CHAMADO_LISTA = {
+    "requests": [
+        {"display_id": "4942", "id": "173861000000000001",
+         "subject": "Writeback de KM no 2Z Fleet",
+         "status": {"name": "In Progress"},
+         "requester": {"name": "Beltrano", "email_id": "beltrano@kintomobility.com.br"},
+         "urgency": {"name": "Alta"},
+         "created_time": {"display_value": "May 29, 2026 11:26 AM"}},
+    ],
+    "list_info": {"has_more_rows": False},
+}
+
+
+class BaseComando(BaseSDP):
+    def executar(self, *argumentos):
+        captura = io.StringIO()
+        with contextlib.redirect_stdout(captura):
+            codigo = sdp_api.main(list(argumentos))
+        return codigo, captura.getvalue()
+
+    def json_da_saida(self, saida):
+        return json.loads(saida)
+
+
+class TesteListar(BaseComando):
+    def test_devolve_os_campos_pedidos(self):
+        self.rede(TOKEN_OK, CHAMADO_LISTA)
+        codigo, saida = self.executar("listar")
+        self.assertEqual(codigo, 0)
+        dados = self.json_da_saida(saida)
+        primeiro = dados["chamados"][0]
+        self.assertEqual(primeiro["numero"], "4942")
+        self.assertEqual(primeiro["assunto"], "Writeback de KM no 2Z Fleet")
+        self.assertEqual(primeiro["solicitante"], "Beltrano")
+        self.assertEqual(primeiro["status"], "In Progress")
+        self.assertEqual(primeiro["urgencia"], "Alta")
+
+    def test_nao_expoe_o_id_interno(self):
+        self.rede(TOKEN_OK, CHAMADO_LISTA)
+        _, saida = self.executar("listar")
+        self.assertNotIn("173861000000000001", saida)
+
+    def test_filtra_pelo_tecnico_do_config(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_LISTA)
+        self.executar("listar")
+        self.assertIn("Fulano+de+Tal", rede.chamadas[1]["url"])
+
+    def test_exclui_status_finais_por_padrao(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_LISTA)
+        self.executar("listar")
+        url = urllib.parse.unquote_plus(rede.chamadas[1]["url"])
+        self.assertIn("Resolved", url)
+        self.assertIn("is not", url)
+
+    def test_todos_nao_exclui_nada(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_LISTA)
+        self.executar("listar", "--todos")
+        url = urllib.parse.unquote_plus(rede.chamadas[1]["url"])
+        self.assertNotIn("is not", url)
+
+    def test_pagina_enquanto_houver_mais(self):
+        pagina1 = {"requests": CHAMADO_LISTA["requests"],
+                   "list_info": {"has_more_rows": True}}
+        pagina2 = {"requests": CHAMADO_LISTA["requests"],
+                   "list_info": {"has_more_rows": False}}
+        self.rede(TOKEN_OK, pagina1, pagina2)
+        _, saida = self.executar("listar")
+        self.assertEqual(len(self.json_da_saida(saida)["chamados"]), 2)
+
+    def test_manda_o_cabecalho_de_autorizacao(self):
+        rede = self.rede(TOKEN_OK, CHAMADO_LISTA)
+        self.executar("listar")
+        cabecalhos = {k.lower(): v for k, v in rede.chamadas[1]["cabecalhos"].items()}
+        self.assertEqual(cabecalhos["authorization"], "Zoho-oauthtoken acc-1")
+        self.assertEqual(cabecalhos["accept"], sdp_api.ACEITA)
+
+    def test_erro_http_vira_mensagem_em_portugues(self):
+        self.rede(TOKEN_OK, urllib.error.HTTPError(
+            "u", 403, "Forbidden", {}, io.BytesIO(b"{}")))
+        codigo, saida = self.executar("listar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("permissão", self.json_da_saida(saida)["erro"].lower())
+
+
+class TesteDetalhe(BaseComando):
+    BUSCA = {"requests": [{"id": "173861000000000001", "display_id": "4942"}]}
+    DETALHE = {"request": {
+        "display_id": "4942", "subject": "Assunto",
+        "status": {"name": "In Progress"},
+        "requester": {"name": "Beltrano", "email_id": "b@kintomobility.com.br"},
+        "technician": {"name": "Fulano de Tal"}, "group": {"name": "IT Dados"},
+        "category": {"name": "Dados"}, "urgency": {"name": "Alta"},
+        "created_time": {"display_value": "May 29, 2026 11:26 AM"},
+        "description": "<p>Primeira linha</p><p>Segunda &amp; linha</p>"}}
+    NOTAS = {"notes": [{"description": "<p>uma nota</p>",
+                        "created_by": {"name": "Fulano"},
+                        "created_time": {"display_value": "Jun 1, 2026 09:00 AM"},
+                        "show_to_requester": True}]}
+
+    def test_converte_a_descricao_para_texto(self):
+        self.rede(TOKEN_OK, self.BUSCA, self.DETALHE, self.NOTAS)
+        _, saida = self.executar("detalhe", "4942")
+        dados = self.json_da_saida(saida)
+        self.assertIn("Primeira linha", dados["descricao"])
+        self.assertIn("Segunda & linha", dados["descricao"])
+        self.assertNotIn("<p>", dados["descricao"])
+
+    def test_traz_as_notas(self):
+        self.rede(TOKEN_OK, self.BUSCA, self.DETALHE, self.NOTAS)
+        _, saida = self.executar("detalhe", "4942")
+        notas = self.json_da_saida(saida)["notas"]
+        self.assertEqual(notas[0]["autor"], "Fulano")
+        self.assertEqual(notas[0]["texto"], "uma nota")
+
+    def test_nao_expoe_o_id_interno(self):
+        self.rede(TOKEN_OK, self.BUSCA, self.DETALHE, self.NOTAS)
+        _, saida = self.executar("detalhe", "4942")
+        self.assertNotIn("173861000000000001", saida)
+
+    def test_chamado_inexistente(self):
+        self.rede(TOKEN_OK, {"requests": []})
+        codigo, saida = self.executar("detalhe", "9999")
+        self.assertEqual(codigo, 1)
+        self.assertIn("9999", self.json_da_saida(saida)["erro"])
+
+
+class TesteTestar(BaseComando):
+    def test_devolve_tecnico_e_contagem(self):
+        self.rede(TOKEN_OK, CHAMADO_LISTA)
+        codigo, saida = self.executar("testar")
+        self.assertEqual(codigo, 0)
+        dados = self.json_da_saida(saida)
+        self.assertTrue(dados["conectado"])
+        self.assertEqual(dados["tecnico"], "Fulano de Tal")
+        self.assertEqual(dados["chamados_abertos"], 1)
+
+    def test_sem_tecnico_no_config_avisa(self):
+        sdp_api.gravar_config({"tecnico_nome": ""})
+        codigo, saida = self.executar("testar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("técnico", self.json_da_saida(saida)["erro"].lower())
+
+
+class TesteLimpo(unittest.TestCase):
+    def test_quebra_de_linha_e_entidades(self):
+        texto = sdp_api.limpo("<p>um</p><br/><div>dois &amp; três</div>")
+        self.assertIn("um", texto)
+        self.assertIn("dois & três", texto)
+        self.assertNotIn("<", texto)
+
+    def test_vazio(self):
+        self.assertEqual(sdp_api.limpo(""), "(vazio)")
+
+    def test_corta_no_limite(self):
+        self.assertTrue(sdp_api.limpo("x" * 500, limite=100).endswith("..."))
 
 
 if __name__ == "__main__":

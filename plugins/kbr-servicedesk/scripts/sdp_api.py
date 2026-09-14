@@ -269,3 +269,182 @@ def chamar(metodo: str, caminho: str, input_data: dict | None, token: str) -> tu
         return status, json.loads(corpo_bruto)
     except json.JSONDecodeError:
         raise ErroSDP(traduzir("resposta_nao_json", {})) from None
+
+
+# --------------------------------------------------------------------------- ajudantes
+
+STATUS_FINAIS = ["Resolved", "Closed", "Cancelled"]
+
+
+def limpo(bruto: str, limite: int = 3000) -> str:
+    """HTML do SDP para texto legível."""
+    if not bruto:
+        return "(vazio)"
+    texto = re.sub(r"<br\s*/?>", "\n", str(bruto))
+    texto = re.sub(r"</(p|div|tr|li|h\d)>", "\n", texto)
+    texto = re.sub(r"<[^>]+>", "", texto)
+    texto = _html.unescape(texto)
+    texto = re.sub(r"[ \t]+", " ", texto)
+    texto = re.sub(r"\n{3,}", "\n\n", texto).strip()
+    return texto[:limite] + ("..." if len(texto) > limite else "")
+
+
+def campo(origem: dict, *chaves: str):
+    atual = origem
+    for chave in chaves:
+        if not isinstance(atual, dict):
+            return None
+        atual = atual.get(chave)
+    return atual
+
+
+def _exigir_tecnico() -> str:
+    nome = (ler_config().get("tecnico_nome") or "").strip()
+    if not nome:
+        raise ErroSDP("Ainda não sei quem é o técnico. Rode /kbr-servicedesk:configurar "
+                      "para informar seu nome e e-mail.")
+    return nome
+
+
+def achar_id(display_id: str, token: str) -> str | None:
+    busca = {"list_info": {"row_count": 1, "search_criteria": [
+        {"field": "display_id", "condition": "is", "value": str(display_id)}]}}
+    status, corpo = chamar("GET", "/requests", busca, token)
+    if status >= 300:
+        raise ErroSDP(traduzir("sdp", corpo, http=status))
+    encontrados = (corpo or {}).get("requests") or []
+    return encontrados[0].get("id") if encontrados else None
+
+
+def _id_obrigatorio(display_id: str, token: str) -> str:
+    interno = achar_id(display_id, token)
+    if not interno:
+        raise ErroSDP(f"Não encontrei o chamado {display_id} no ServiceDesk. Confira o número.")
+    return interno
+
+
+def _resumir(bruto: dict) -> dict:
+    return {
+        "numero": str(bruto.get("display_id") or ""),
+        "assunto": bruto.get("subject"),
+        "solicitante": campo(bruto, "requester", "name"),
+        "status": campo(bruto, "status", "name"),
+        "urgencia": campo(bruto, "urgency", "name"),
+        "criado_em": campo(bruto, "created_time", "display_value"),
+    }
+
+
+def _buscar_chamados(token: str, status_pedido: str | None, todos: bool) -> list[dict]:
+    tecnico = _exigir_tecnico()
+    criterios: list[dict] = [
+        {"field": "technician.name", "condition": "is", "value": tecnico}]
+    if status_pedido:
+        criterios.append({"field": "status.name", "condition": "is",
+                          "value": status_pedido, "logical_operator": "AND"})
+    elif not todos:
+        criterios.append({"field": "status.name", "condition": "is not",
+                          "values": STATUS_FINAIS, "logical_operator": "AND"})
+    reunidos: list[dict] = []
+    inicio = 1
+    while True:
+        pedido = {"list_info": {"row_count": 100, "start_index": inicio,
+                                "get_total_count": True, "search_criteria": criterios}}
+        status, corpo = chamar("GET", "/requests", pedido, token)
+        if status >= 300:
+            raise ErroSDP(traduzir("sdp", corpo, http=status))
+        reunidos.extend((corpo or {}).get("requests") or [])
+        if not campo(corpo or {}, "list_info", "has_more_rows"):
+            break
+        inicio += 100
+    return reunidos
+
+
+# --------------------------------------------------------------------------- comandos
+
+def cmd_testar(_args) -> int:
+    tecnico = _exigir_tecnico()
+    token = access_token()
+    abertos = _buscar_chamados(token, None, todos=False)
+    _imprimir({"conectado": True, "tecnico": tecnico,
+               "email": ler_config().get("tecnico_email"),
+               "chamados_abertos": len(abertos)})
+    return 0
+
+
+def cmd_listar(args) -> int:
+    token = access_token()
+    brutos = _buscar_chamados(token, getattr(args, "status", None), getattr(args, "todos", False))
+    _imprimir({"tecnico": _exigir_tecnico(), "total": len(brutos),
+               "chamados": [_resumir(item) for item in brutos]})
+    return 0
+
+
+def cmd_detalhe(args) -> int:
+    token = access_token()
+    interno = _id_obrigatorio(args.numero, token)
+    status, corpo = chamar("GET", f"/requests/{interno}", None, token)
+    if status >= 300:
+        raise ErroSDP(traduzir("sdp", corpo, http=status))
+    bruto = (corpo or {}).get("request") or {}
+
+    status_notas, corpo_notas = chamar(
+        "GET", f"/requests/{interno}/notes", {"list_info": {"row_count": args.notas}}, token)
+    notas = (corpo_notas or {}).get("notes") or [] if status_notas < 300 else []
+
+    saida = _resumir(bruto)
+    saida.update({
+        "tecnico": campo(bruto, "technician", "name"),
+        "grupo": campo(bruto, "group", "name"),
+        "categoria": campo(bruto, "category", "name"),
+        "email_solicitante": campo(bruto, "requester", "email_id"),
+        "descricao": limpo(bruto.get("description")),
+        "notas": [{
+            "autor": campo(nota, "created_by", "name"),
+            "quando": campo(nota, "created_time", "display_value"),
+            "visivel_ao_solicitante": bool(nota.get("show_to_requester")),
+            "texto": limpo(nota.get("description"), 800),
+        } for nota in notas],
+    })
+    _imprimir(saida)
+    return 0
+
+
+# --------------------------------------------------------------------------- entrada
+
+def _imprimir(dados: dict) -> None:
+    print(json.dumps(dados, ensure_ascii=False, indent=2))
+
+
+def construir_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="comando", required=True)
+
+    sub.add_parser("testar", help="confirma o acesso e conta os chamados do técnico")
+
+    listar = sub.add_parser("listar", help="lista os chamados do técnico")
+    listar.add_argument("--status", default=None, help="filtra por um status exato")
+    listar.add_argument("--todos", action="store_true", help="inclui os já finalizados")
+
+    detalhe = sub.add_parser("detalhe", help="mostra um chamado e suas notas")
+    detalhe.add_argument("numero")
+    detalhe.add_argument("--notas", type=int, default=8)
+
+    return parser
+
+
+COMANDOS = {"testar": cmd_testar, "listar": cmd_listar, "detalhe": cmd_detalhe}
+
+
+def main(argumentos: list[str] | None = None) -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    args = construir_parser().parse_args(argumentos)
+    try:
+        return COMANDOS[args.comando](args)
+    except ErroSDP as erro:
+        _imprimir({"erro": str(erro)})
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
