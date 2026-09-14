@@ -506,10 +506,40 @@ def entidades(texto: str) -> str:
 
 
 def _ler_html(caminho: str) -> str:
+    """Lê o arquivo com o texto da nota/resolução e devolve o conteúdo já sem espaços nas
+    pontas.
+
+    Qualquer falha vira `ErroSDP` — é o contrato do módulo (ver docstring do arquivo): nada
+    além disso pode escapar para o técnico como traceback cru.
+
+    A decodificação é sempre UTF-8, sem `errors="replace"` nem outra codificação de
+    reserva: esse texto vai para o corpo de um chamado que pessoas de verdade leem, e um
+    acento decodificado errado silenciosamente (um "ã" virando outro caractere qualquer)
+    é um erro visível na tela do solicitante — pior do que pedir para o técnico salvar o
+    arquivo de novo em UTF-8, o que custa uma tentativa.
+    """
     arquivo = Path(caminho)
-    if not arquivo.is_file():
+    if not arquivo.exists():
         raise ErroSDP(f"Não encontrei o arquivo com o texto: {caminho}")
-    conteudo = arquivo.read_text(encoding="utf-8").strip()
+    if arquivo.is_dir():
+        raise ErroSDP(f"O caminho informado não é um arquivo, é uma pasta: {caminho}")
+    if not arquivo.is_file():
+        raise ErroSDP(f"O caminho informado não é um arquivo: {caminho}")
+    try:
+        conteudo = arquivo.read_text(encoding="utf-8").strip()
+    except UnicodeDecodeError:
+        raise ErroSDP(
+            f"O arquivo {caminho} não está salvo em UTF-8 — parece ter sido salvo no "
+            "codepage padrão do Windows (o que o PowerShell e o Bloco de Notas fazem por "
+            "padrão). Abra o arquivo, salve de novo escolhendo UTF-8 como codificação e "
+            "repita o comando."
+        ) from None
+    except OSError as erro:
+        detalhe = erro.strerror or str(erro)
+        raise ErroSDP(
+            f"Não consegui ler o arquivo {caminho}: {detalhe}. Confira se ele ainda existe "
+            "e se você tem permissão para abri-lo, e tente de novo."
+        ) from None
     if not conteudo:
         raise ErroSDP("O arquivo com o texto está vazio.")
     return conteudo
@@ -563,7 +593,10 @@ def cmd_status(args) -> int:
                         comentario=args.comentario)
     corpo_request: dict = {"status": {"name": novo}}
     if espera:
-        corpo_request["onhold_scheduler"] = {"comments": args.comentario}
+        # Mesmo campo de texto livre que a nota (`description`) e a resolução
+        # (`resolution.content`): passa por `entidades()` pela mesma razão — o SDP
+        # renderiza acento cru de forma inconsistente conforme o cliente.
+        corpo_request["onhold_scheduler"] = {"comments": entidades(args.comentario)}
     return _enviar("PUT", f"/requests/{interno}", {"request": corpo_request}, token,
                    "mudar status", args.numero)
 

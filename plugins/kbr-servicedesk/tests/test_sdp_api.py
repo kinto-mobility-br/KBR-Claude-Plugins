@@ -548,6 +548,41 @@ class TesteEscrita(BaseComando):
         self.assertEqual(codigo, 1)
         self.assertIn("não encontrei", self.json_da_saida(saida)["erro"].lower())
 
+    def _arquivo_latin1(self, nome="nota_latin1.html"):
+        # Bytes explícitos (não depende do locale da máquina que roda o teste) — simula um
+        # arquivo salvo no codepage padrão do Windows (PowerShell Set-Content/Out-File,
+        # Bloco de Notas), que não é UTF-8.
+        caminho = Path(self.tmp.name) / nome
+        caminho.write_bytes("<p>Situação em análise, atenção redobrada.</p>".encode("latin-1"))
+        return str(caminho)
+
+    def test_arquivo_fora_de_utf8_vira_errosdp_na_nota(self):
+        self.rede(TOKEN_OK)
+        codigo, saida = self.executar("nota", "4942", "--arquivo", self._arquivo_latin1(),
+                                      "--confirmar")
+        self.assertEqual(codigo, 1)
+        erro = self.json_da_saida(saida)["erro"]
+        self.assertIn("UTF-8", erro)
+
+    def test_arquivo_fora_de_utf8_vira_errosdp_no_resolver(self):
+        self.rede(TOKEN_OK)
+        codigo, saida = self.executar(
+            "resolver", "4942", "--arquivo",
+            self._arquivo_latin1("resolucao_latin1.html"), "--confirmar")
+        self.assertEqual(codigo, 1)
+        erro = self.json_da_saida(saida)["erro"]
+        self.assertIn("UTF-8", erro)
+
+    def test_arquivo_que_e_pasta_diz_que_nao_e_arquivo(self):
+        self.rede(TOKEN_OK)
+        pasta = Path(self.tmp.name) / "pasta_em_vez_de_arquivo.html"
+        pasta.mkdir()
+        codigo, saida = self.executar("nota", "4942", "--arquivo", str(pasta), "--confirmar")
+        self.assertEqual(codigo, 1)
+        erro = self.json_da_saida(saida)["erro"].lower()
+        self.assertNotIn("não encontrei", erro)
+        self.assertIn("não é um arquivo", erro)
+
     def test_status_simples(self):
         rede = self.rede(TOKEN_OK, self.BUSCA, {"response_status": {"status": "success"}})
         self.executar("status", "4942", "In Progress", "--confirmar")
@@ -571,13 +606,31 @@ class TesteEscrita(BaseComando):
         self.assertIn("comentário", self.json_da_saida(saida)["erro"].lower())
 
     def test_status_de_espera_com_comentario_manda_onhold(self):
+        # Comentário sem acento de propósito: este teste verifica que o texto confirmado
+        # chega a onhold_scheduler.comments, não a conversão de acentos — essa parte tem
+        # teste dedicado logo abaixo (test_status_de_espera_comentario_acentos_viram_entidades),
+        # no mesmo estilo do teste de acentos da nota.
         rede = self.rede(TOKEN_OK, self.BUSCA, {"response_status": {"status": "success"}})
         self.executar("status", "4942", "Aguardando Aprovação",
-                      "--comentario", "esperando validação", "--confirmar")
+                      "--comentario", "esperando aprovacao do gestor", "--confirmar")
         payload = json.loads(
             urllib.parse.parse_qs(rede.chamadas[-1]["corpo"])["input_data"][0])
         self.assertEqual(payload["request"]["onhold_scheduler"]["comments"],
-                         "esperando validação")
+                         "esperando aprovacao do gestor")
+
+    def test_status_de_espera_comentario_acentos_viram_entidades(self):
+        # Mesmo tratamento que a nota e a resolução (entidades()) — antes da correção da
+        # revisão, o comentário de onhold_scheduler ia cru, sem passar por entidades().
+        rede = self.rede(TOKEN_OK, self.BUSCA, {"response_status": {"status": "success"}})
+        self.executar("status", "4942", "Aguardando Aprovação",
+                      "--comentario", "esperando validação e atenção", "--confirmar")
+        payload = json.loads(
+            urllib.parse.parse_qs(rede.chamadas[-1]["corpo"])["input_data"][0])
+        comentario = payload["request"]["onhold_scheduler"]["comments"]
+        self.assertIn("&#231;", comentario)  # ç
+        self.assertIn("&#227;", comentario)  # ã
+        self.assertNotIn("ç", comentario)
+        self.assertNotIn("ã", comentario)
 
     def test_resolver_manda_status_e_resolution(self):
         rede = self.rede(TOKEN_OK, self.BUSCA, {"response_status": {"status": "success"}})
