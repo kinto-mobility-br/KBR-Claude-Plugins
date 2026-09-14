@@ -17,10 +17,13 @@ testes e por automação.
 """
 from __future__ import annotations
 
+import argparse
+import getpass
 import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 PREFIXO_OP = "op://"
@@ -201,3 +204,116 @@ def _gravar_arquivo(nome: str, valor: str) -> None:
         linhas.append(f"{nome}={valor}")
     caminho.parent.mkdir(parents=True, exist_ok=True)
     caminho.write_text("\n".join(linhas) + "\n", encoding="utf-8")
+
+
+def aplicar_permissoes(base: Path) -> list[str]:
+    """Restringe a pasta ao usuário atual. Devolve avisos (nunca levanta)."""
+    avisos: list[str] = []
+    if os.name == "nt":
+        usuario = os.environ.get("USERNAME") or getpass.getuser()
+        try:
+            processo = subprocess.run(
+                ["icacls", str(base), "/inheritance:r", "/grant:r", f"{usuario}:(OI)(CI)F"],
+                capture_output=True, text=True)
+            if processo.returncode != 0:
+                avisos.append("não consegui restringir a pasta ao seu usuário com o icacls")
+        except FileNotFoundError:
+            avisos.append("icacls não encontrado; a pasta ficou com as permissões herdadas")
+    else:
+        base.chmod(0o700)
+        arquivo = base / "secrets.env"
+        if arquivo.exists():
+            arquivo.chmod(0o600)
+    return avisos
+
+
+_IDENTIDADES_AMPLAS = ("todos", "everyone", "usuários", "usuarios", "users", "authenticated")
+
+
+def conferir_permissoes(base: Path) -> list[str]:
+    """Avisa se a pasta está acessível a mais gente que o usuário atual."""
+    if os.name == "nt":
+        try:
+            processo = subprocess.run(["icacls", str(base)], capture_output=True, text=True)
+        except FileNotFoundError:
+            return []
+        if processo.returncode != 0:
+            return []
+        texto = (processo.stdout or "").lower()
+        if any(marca in texto for marca in _IDENTIDADES_AMPLAS):
+            return ["a pasta parece acessível a outros usuários da máquina; "
+                    "rode /kbr-core:secrets init de novo para restringir"]
+        return []
+    modo = base.stat().st_mode & 0o777
+    if modo & 0o077:
+        return [f"a pasta está com permissões {modo:o}; o esperado é 700"]
+    return []
+
+
+def cmd_init(_args) -> int:
+    base = caminho_base()
+    base.mkdir(parents=True, exist_ok=True)
+    caminho_cache().mkdir(parents=True, exist_ok=True)
+    arquivo = caminho_arquivo()
+    if not arquivo.exists():
+        arquivo.write_text(CABECALHO, encoding="utf-8")
+    config = caminho_config()
+    if not config.exists():
+        config.write_text("{}\n", encoding="utf-8")
+    avisos = aplicar_permissoes(base)
+    print(f"pasta de configuração: {base}")
+    print("arquivo de segredos criado (ou já existia) e restrito ao seu usuário")
+    for aviso in avisos:
+        print(f"AVISO: {aviso}")
+    return 0
+
+
+def _chaves_pedidas(bruto: str) -> list[str]:
+    return [parte.strip() for parte in bruto.split(",") if parte.strip()]
+
+
+def cmd_registrar(args) -> int:
+    cmd_init(args)
+    arquivo = caminho_arquivo()
+    texto = arquivo.read_text(encoding="utf-8")
+    existentes = analisar(texto)[0]
+    faltando = [c for c in _chaves_pedidas(args.chaves) if c not in existentes]
+    if not faltando:
+        print(f"nada a fazer: as chaves de {args.plugin} já estão no arquivo")
+        return 0
+    marca = f"# --- {args.plugin} ---"
+    if not texto.endswith("\n"):
+        texto += "\n"
+    bloco = "" if marca in texto else f"\n{marca}\n"
+    bloco += "".join(f"{chave}=\n" for chave in faltando)
+    arquivo.write_text(texto + bloco, encoding="utf-8")
+    print(f"chaves acrescentadas para {args.plugin}: {', '.join(faltando)}")
+    return 0
+
+
+def construir_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Segredos dos plugins KINTO. Nenhum subcomando imprime o valor de um segredo.")
+    sub = parser.add_subparsers(dest="comando", required=True)
+
+    sub.add_parser("init", help="cria ~/.kbr com o arquivo de segredos e restringe o acesso")
+
+    registrar = sub.add_parser("registrar", help="acrescenta as chaves de um plugin ao arquivo")
+    registrar.add_argument("--plugin", required=True)
+    registrar.add_argument("--chaves", required=True, help="lista separada por vírgula")
+
+    return parser
+
+
+COMANDOS = {"init": cmd_init, "registrar": cmd_registrar}
+
+
+def main(argumentos: list[str] | None = None) -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    args = construir_parser().parse_args(argumentos)
+    return COMANDOS[args.comando](args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

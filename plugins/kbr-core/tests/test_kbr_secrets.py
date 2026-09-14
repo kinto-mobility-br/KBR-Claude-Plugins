@@ -228,5 +228,73 @@ class TesteOnePassword(BaseTemporaria):
             shutil.which = original
 
 
+class TesteInitERegistrar(BaseTemporaria):
+    def setUp(self):
+        super().setUp()
+        # init cria a própria pasta; começa sem ela
+        for filho in sorted(self.base.rglob("*"), reverse=True):
+            filho.unlink() if filho.is_file() else filho.rmdir()
+        self.base.rmdir()
+
+    def executar(self, *argumentos):
+        return kbr_secrets.main(list(argumentos))
+
+    def test_init_cria_estrutura(self):
+        self.assertEqual(self.executar("init"), 0)
+        self.assertTrue(kbr_secrets.caminho_arquivo().is_file())
+        self.assertTrue(kbr_secrets.caminho_config().is_file())
+        self.assertTrue(kbr_secrets.caminho_cache().is_dir())
+
+    def test_init_escreve_o_cabecalho(self):
+        self.executar("init")
+        texto = kbr_secrets.caminho_arquivo().read_text(encoding="utf-8")
+        self.assertIn("fica fora do git", texto)
+
+    def test_init_e_idempotente_e_nao_apaga_valores(self):
+        self.executar("init")
+        kbr_secrets.gravar("A", "valor-importante")
+        self.executar("init")
+        self.assertEqual(kbr_secrets.ler_arquivo()["A"], "valor-importante")
+
+    def test_registrar_acrescenta_chaves_vazias(self):
+        self.executar("init")
+        self.executar("registrar", "--plugin", "kbr-servicedesk",
+                      "--chaves", "SDP_CLIENT_ID,SDP_CLIENT_SECRET")
+        valores = kbr_secrets.ler_arquivo()
+        self.assertEqual(valores["SDP_CLIENT_ID"], "")
+        self.assertEqual(valores["SDP_CLIENT_SECRET"], "")
+
+    def test_registrar_escreve_a_marca_do_plugin(self):
+        self.executar("init")
+        self.executar("registrar", "--plugin", "kbr-servicedesk", "--chaves", "SDP_A")
+        texto = kbr_secrets.caminho_arquivo().read_text(encoding="utf-8")
+        self.assertIn("# --- kbr-servicedesk ---", texto)
+
+    def test_registrar_e_idempotente(self):
+        self.executar("init")
+        self.executar("registrar", "--plugin", "p", "--chaves", "A,B")
+        self.executar("registrar", "--plugin", "p", "--chaves", "A,B")
+        texto = kbr_secrets.caminho_arquivo().read_text(encoding="utf-8")
+        self.assertEqual(texto.count("A="), 1)
+        self.assertEqual(texto.count("# --- p ---"), 1)
+
+    def test_registrar_nao_apaga_valor_existente(self):
+        self.executar("init")
+        self.executar("registrar", "--plugin", "p", "--chaves", "A")
+        kbr_secrets.gravar("A", "ja-preenchido")
+        self.executar("registrar", "--plugin", "p", "--chaves", "A,B")
+        self.assertEqual(kbr_secrets.ler_arquivo()["A"], "ja-preenchido")
+
+    def test_registrar_roda_o_init_sozinho(self):
+        self.assertEqual(self.executar("registrar", "--plugin", "p", "--chaves", "A"), 0)
+        self.assertTrue(kbr_secrets.caminho_arquivo().is_file())
+
+    @unittest.skipIf(os.name == "nt", "modo POSIX")
+    def test_permissoes_posix(self):
+        self.executar("init")
+        self.assertEqual(kbr_secrets.caminho_base().stat().st_mode & 0o777, 0o700)
+        self.assertEqual(kbr_secrets.caminho_arquivo().stat().st_mode & 0o777, 0o600)
+
+
 if __name__ == "__main__":
     unittest.main()
