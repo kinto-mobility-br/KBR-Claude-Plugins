@@ -60,7 +60,8 @@ Formatos de saída são diferentes entre os dois scripts:
   **mostre esse texto como veio**, ele já foi escrito em PT-BR para esta pessoa, nunca reescreva.
 - `kbr_secrets.py` imprime **texto simples**, uma linha por informação (não é JSON). `status`
   sai com código 1 sempre que alguma chave ainda está vazia ou a proteção está ausente — isso é
-  **normal** até o Passo 8, não é um erro para reagir. O que importa é ler o texto.
+  **normal enquanto o wizard está em andamento**, não é um erro para reagir: as chaves só ficam
+  todas preenchidas no Passo 6. O que importa é ler o texto, não o código de saída.
 
 ---
 
@@ -83,12 +84,12 @@ Diga, nestas palavras ou parecidas:
 > |---|---|---|
 > | 1 | Confiro se a máquina tem o que precisa | eu |
 > | 2 | Explico o que é cada coisa | eu |
-> | 3 | Crio o arquivo onde a chave vai morar | eu |
+> | 3 | Crio o arquivo onde a chave vai morar e **tranco antes de você colar nada** | eu |
 > | 4 | Você cria a chave no site da Zoho e cola duas linhas no Bloco de Notas | você |
 > | 5 | Você gera um código temporário e cola no mesmo lugar | você |
 > | 6 | Troco esse código por um acesso que não expira | eu |
 > | 7 | Você me diz seu nome e e-mail, e eu testo a conexão | os dois |
-> | 8 | Ligo a proteção do arquivo e fecho | eu |
+> | 8 | Confiro que a proteção continua de pé e fecho | eu |
 >
 > Duas coisas que valem saber antes:
 >
@@ -105,6 +106,22 @@ Se ela disser que quer começar, siga para o passo 1. Se disser que depois, diga
 
 **Diga:** antes de tudo vou conferir se o computador tem o que precisa. Isso é rápido e você
 não faz nada agora.
+
+🔁 **Primeiro, uma pergunta que evita um problema silencioso:** "você instalou o plugin agora,
+nesta mesma sessão, ou já reabriu o Claude Code depois de instalar?"
+
+A proteção do arquivo de segredos é feita por um hook, e **hook só entra quando a sessão
+começa**. Quem instalou e não reabriu está sem essa camada, e não há aviso nenhum na tela
+dizendo isso.
+
+- **Instalou agora e não reabriu:** peça para **fechar e reabrir o Claude Code** e chamar
+  `/kbr-servicedesk:configurar` de novo. Diga por quê, em uma frase — a proteção do arquivo só
+  vale a partir da próxima sessão, e é melhor tê-la antes de guardar a primeira senha. **Pare
+  aqui**; não siga para o passo 2.
+- **Já reabriu, ou não tem certeza mas a sessão é de hoje cedo:** siga.
+
+Na dúvida, prefira pedir para reabrir. Custa trinta segundos e fecha a única janela em que o
+arquivo ficaria desprotegido.
 
 **Execute:**
 ```bash
@@ -161,7 +178,7 @@ Sem comando nenhum. Explique, nessa ordem:
 
 Pergunte se ficou claro antes de seguir.
 
-## 📄 Passo 3 — Criar o arquivo de segredos
+## 📄 Passo 3 — Criar o arquivo de segredos **e trancá-lo antes de ter o que guardar**
 
 **Execute:**
 ```bash
@@ -171,6 +188,29 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" registrar --plugin kbr-ser
 
 Rodar de novo não faz mal: `registrar` só acrescenta o que falta e nunca toca em valor já
 preenchido.
+
+🔒 **Agora, antes de qualquer senha entrar no arquivo, ligue a proteção.** Este é o momento
+certo: a partir do passo 4 o arquivo passa a ter conteúdo de verdade, e trancar depois deixaria
+uma janela aberta justamente enquanto há o que proteger.
+
+**Pergunte**, com estas palavras ou parecidas:
+
+> Antes de você colar qualquer coisa aqui, quero ligar uma proteção: uma regra que impede
+> qualquer sessão do Claude Code de abrir esse arquivo — inclusive eu. Os programas continuam
+> lendo por dentro, normalmente; o que fica barrado é alguém pedir para eu mostrar o conteúdo.
+> Posso ligar? (s/n)
+
+**Só depois do "sim":**
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" proteger
+```
+
+Se a pessoa disser não, **respeite e siga** — mas avise, em uma frase, que o arquivo vai ficar
+sem essa camada e que dá para ligar depois, no passo 8. Não insista mais de uma vez.
+
+**Confirme que entrou:** rode o `status` do fim deste passo e leia a linha da proteção. Se ela
+disser "ausente" mesmo depois do "sim", leve ao diagnóstico — não siga para o passo 4 achando
+que ficou protegido.
 
 📝 **Este passo a passo é todo textual, e isso basta.** Não há guia com imagens, e você não
 deve prometer um. Em troca, descreva cada tela com o que a pessoa vê nela: o nome exato do
@@ -305,18 +345,25 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/sdp_api.py" testar
   esperava ter chamados, peça para conferir a grafia exata no portal e repita o comando acima
   com o nome corrigido.
 
-## 🔒 Passo 8 — Proteger e encerrar
+## 🔒 Passo 8 — Conferir a proteção e encerrar
+
+A proteção foi ligada no passo 3, antes de existir segredo no arquivo. Aqui você só confere que
+ela continua de pé — e oferece de novo, uma única vez, se a pessoa tiver recusado lá atrás.
 
 **Execute:**
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" status --plugin kbr-servicedesk
 ```
-Se a proteção estiver ausente, **pergunte** se pode ativá-la e explique em uma frase: é uma
-regra que impede qualquer sessão do Claude Code de abrir o arquivo de segredos. Só depois do
-"sim", rode:
-```bash
-python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" proteger
-```
+
+- Diz "ativa": ótimo, siga para o resumo.
+- Diz "ausente": agora **há segredo de verdade no arquivo**, então vale insistir uma vez.
+  Explique que o arquivo já tem a credencial dela dentro e pergunte se pode ligar. Depois do
+  "sim":
+  ```bash
+  python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" proteger
+  ```
+  Se ela recusar de novo, **aceite e siga**. Registre no resumo que ficou sem essa camada e que
+  `/kbr-core:secrets` liga quando ela quiser.
 
 **Feche com um resumo:**
 
