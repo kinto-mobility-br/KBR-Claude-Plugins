@@ -13,7 +13,7 @@ Dentro do Claude Code, uma vez por máquina:
 Depois, o que você for usar:
 
 ```
-/plugin install kbr-servicedesk@kinto-brasil
+/plugin install kbr-core@kinto-brasil
 ```
 
 O repositório é privado: a instalação usa as mesmas credenciais git que você já usa para
@@ -21,10 +21,10 @@ clonar os repositórios da KINTO.
 
 ## Catálogo
 
-| Plugin | O que faz | Skills |
-|---|---|---|
-| `kbr-core` | Segredos por usuário em `~/.kbr/secrets.env` e a proteção que impede o modelo de lê-los. Instalado junto com os outros, por dependência. | `/kbr-core:secrets` |
-| `kbr-servicedesk` | Gestor de chamados do ServiceDesk Plus por menu, com wizard de configuração para quem nunca mexeu com OAuth. | `/kbr-servicedesk:sdp`, `/kbr-servicedesk:configurar` |
+| Plugin | O que faz | Skills | Status |
+|---|---|---|---|
+| `kbr-core` | Segredos por usuário em `~/.kbr/secrets.env` e a proteção que impede o modelo de lê-los. Instalado junto com os outros, por dependência. | `/kbr-core:secrets` | disponível |
+| `kbr-servicedesk` | Gestor de chamados do ServiceDesk Plus por menu, com wizard de configuração para quem nunca mexeu com OAuth. | `/kbr-servicedesk:sdp`, `/kbr-servicedesk:configurar` | em construção — chega na Task 12 (empacotamento do plugin) |
 
 ## Pré-requisitos por máquina
 
@@ -45,19 +45,19 @@ Acrescente ao `.claude/settings.json` do repositório:
     }
   },
   "enabledPlugins": {
-    "kbr-core@kinto-brasil": true,
-    "kbr-servicedesk@kinto-brasil": true
+    "kbr-core@kinto-brasil": true
   }
 }
 ```
 
-Quem abrir o repositório recebe a sugestão de instalar.
+Quem abrir o repositório recebe a sugestão de instalar. Acrescente
+`"kbr-servicedesk@kinto-brasil": true` quando esse plugin estiver disponível (ver Catálogo).
 
 ## Atualizar
 
 ```
 /plugin marketplace update kinto-brasil
-/plugin update kbr-servicedesk@kinto-brasil
+/plugin update kbr-core@kinto-brasil
 ```
 
 ## Desenvolver
@@ -67,6 +67,6 @@ Leia o [`CLAUDE.md`](CLAUDE.md). Em resumo:
 ```bash
 python scripts/sincronizar_shared.py    # depois de editar shared/
 python scripts/testar.py                # testes de todos os plugins
-python scripts/validar.py               # claude plugin validate
-python scripts/criar_tag.py kbr-core --push   # publicar uma versão
+python scripts/validar.py               # claude plugin validate --strict
+python scripts/criar_tag.py kbr-core --push   # publicar uma versão — dá push da tag no origin, visível a todo mundo
 ```

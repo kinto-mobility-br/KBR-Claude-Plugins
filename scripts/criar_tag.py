@@ -14,6 +14,16 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 
 
+def _rodar_git(comando: list[str]) -> subprocess.CompletedProcess[str]:
+    """Roda um comando git no repositório, capturando a saída sem levantar em erro.
+
+    `check=True` sem tratamento estoura um `CalledProcessError` com traceback em
+    inglês — errado para o passo em que um mantenedor publica uma versão. Aqui o
+    chamador decide o que fazer com `returncode` e mostra o próprio stderr do git.
+    """
+    return subprocess.run(comando, cwd=RAIZ, capture_output=True, text=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("plugin")
@@ -36,10 +46,19 @@ def main() -> int:
         print(f"a tag {tag} já existe. suba a versão no plugin.json antes de publicar.")
         return 1
 
-    subprocess.run(["git", "tag", tag], check=True, cwd=RAIZ)
+    resultado = _rodar_git(["git", "tag", tag])
+    if resultado.returncode != 0:
+        erro = (resultado.stderr or resultado.stdout or "").strip()
+        print(f"ERRO: não consegui criar a tag {tag} — {erro}")
+        return 1
     print(f"tag criada: {tag}")
+
     if args.push:
-        subprocess.run(["git", "push", "origin", tag], check=True, cwd=RAIZ)
+        resultado = _rodar_git(["git", "push", "origin", tag])
+        if resultado.returncode != 0:
+            erro = (resultado.stderr or resultado.stdout or "").strip()
+            print(f"ERRO: não consegui publicar a tag {tag} no origin — {erro}")
+            return 1
         print(f"tag publicada no origin: {tag}")
     else:
         print(f"para publicar: git push origin {tag}")
