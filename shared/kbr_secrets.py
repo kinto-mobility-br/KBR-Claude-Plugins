@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import json
 import os
 import re
 import shutil
@@ -311,6 +312,133 @@ def cmd_registrar(args) -> int:
     return 0
 
 
+REGRAS_DENY = [
+    "Read(~/.kbr/secrets.env)",
+    "Edit(~/.kbr/secrets.env)",
+    "Read(~/.kbr/cache/**)",
+    "Edit(~/.kbr/cache/**)",
+]
+
+
+def caminho_settings() -> Path:
+    return Path.home() / ".claude" / "settings.json"
+
+
+def deny_configurado() -> bool:
+    caminho = caminho_settings()
+    if not caminho.exists():
+        return False
+    try:
+        dados = json.loads(caminho.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False
+    deny = (dados.get("permissions") or {}).get("deny") or []
+    return any(".kbr" in str(regra) for regra in deny)
+
+
+def _chaves_do_bloco(texto: str, plugin: str) -> list[str]:
+    """Chaves entre a marca do plugin e a próxima marca de bloco."""
+    marca = f"# --- {plugin} ---"
+    dentro = False
+    chaves: list[str] = []
+    for linha in texto.splitlines():
+        despida = linha.strip()
+        if despida.startswith("# --- "):
+            dentro = despida == marca
+            continue
+        if dentro and "=" in despida and not despida.startswith("#"):
+            chave = despida.partition("=")[0].strip()
+            if _CHAVE_VALIDA.match(chave):
+                chaves.append(chave)
+    return chaves
+
+
+def cmd_status(args) -> int:
+    arquivo = caminho_arquivo()
+    if not arquivo.exists():
+        print("o arquivo de segredos ainda não existe.")
+        print("rode /kbr-core:secrets init para criá-lo.")
+        return 1
+    texto = arquivo.read_text(encoding="utf-8")
+    valores, avisos = analisar(texto)
+    chaves = sorted(valores)
+    if getattr(args, "plugin", None):
+        do_bloco = set(_chaves_do_bloco(texto, args.plugin))
+        chaves = [chave for chave in chaves if chave in do_bloco]
+    print(f"arquivo de segredos: {arquivo}")
+    problemas = 0
+    usa_op = False
+    if not chaves:
+        print("  (nenhuma chave registrada ainda)")
+    for chave in chaves:
+        valor = valores[chave].strip()
+        if not valor:
+            print(f"  {chave}: vazia")
+            problemas += 1
+        elif valor.startswith(PREFIXO_OP):
+            usa_op = True
+            print(f"  {chave}: preenchida (1Password)")
+        else:
+            print(f"  {chave}: preenchida")
+    for aviso in avisos:
+        print(f"  AVISO: {aviso}")
+    if usa_op:
+        if op_disponivel():
+            print("  1Password CLI: encontrado")
+        else:
+            print("  1Password CLI: NÃO encontrado no PATH")
+            problemas += 1
+    for aviso in conferir_permissoes(caminho_base()):
+        print(f"  AVISO: {aviso}")
+    print(f"  proteção no settings do Claude Code: "
+          f"{'ativa' if deny_configurado() else 'ausente (rode o init e aceite)'}")
+    return 1 if problemas else 0
+
+
+def cmd_editar(_args) -> int:
+    arquivo = caminho_arquivo()
+    if not arquivo.exists():
+        print("o arquivo de segredos ainda não existe. rode o init primeiro.")
+        return 1
+    try:
+        if os.name == "nt":
+            os.startfile(str(arquivo))  # noqa: S606
+        elif sys.platform == "darwin":
+            subprocess.run(["open", str(arquivo)], check=False)
+        else:
+            subprocess.run(["xdg-open", str(arquivo)], check=False)
+    except OSError as erro:
+        print(f"não consegui abrir o editor automaticamente ({erro}).")
+        print("abra o arquivo de segredos pelo seu explorador de arquivos.")
+        return 1
+    print("abri o arquivo de segredos no seu editor padrão.")
+    print("cole os valores depois do '=', salve, feche e volte aqui.")
+    return 0
+
+
+def cmd_proteger(_args) -> int:
+    caminho = caminho_settings()
+    dados: dict = {}
+    if caminho.exists():
+        try:
+            dados = json.loads(caminho.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            print(f"não consegui entender o {caminho}: não é um JSON válido.")
+            print("não mexi em nada. acrescente estas linhas à mão em permissions.deny:")
+            for regra in REGRAS_DENY:
+                print(f"  {regra}")
+            return 1
+    permissoes = dados.setdefault("permissions", {})
+    deny = permissoes.setdefault("deny", [])
+    novas = [regra for regra in REGRAS_DENY if regra not in deny]
+    deny.extend(novas)
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho.write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"proteção gravada em {caminho}: {len(novas)} regra(s) nova(s), "
+          f"{len(REGRAS_DENY) - len(novas)} já existia(m)")
+    return 0
+
+
 def construir_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Segredos dos plugins KINTO. Nenhum subcomando imprime o valor de um segredo.")
@@ -322,10 +450,17 @@ def construir_parser() -> argparse.ArgumentParser:
     registrar.add_argument("--plugin", required=True)
     registrar.add_argument("--chaves", required=True, help="lista separada por vírgula")
 
+    status = sub.add_parser("status", help="diz quais chaves estão preenchidas, sem mostrar valor")
+    status.add_argument("--plugin", default=None)
+
+    sub.add_parser("editar", help="abre o arquivo de segredos no editor padrão")
+    sub.add_parser("proteger", help="grava as regras de deny no settings do Claude Code")
+
     return parser
 
 
-COMANDOS = {"init": cmd_init, "registrar": cmd_registrar}
+COMANDOS = {"init": cmd_init, "registrar": cmd_registrar, "status": cmd_status,
+            "editar": cmd_editar, "proteger": cmd_proteger}
 
 
 def main(argumentos: list[str] | None = None) -> int:

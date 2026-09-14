@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Testes do módulo de segredos — parser do .env e ordem de resolução."""
+import contextlib
 import io
+import json
 import os
 import sys
 import tempfile
@@ -319,6 +321,155 @@ class TesteInitERegistrar(BaseTemporaria):
         texto = kbr_secrets.caminho_arquivo().read_text(encoding="utf-8")
         self.assertEqual(texto.count("A="), 1)
         self.assertEqual(texto.count("B="), 1)
+
+
+class TesteStatus(BaseTemporaria):
+    def rodar_status(self, *argumentos):
+        captura = io.StringIO()
+        with contextlib.redirect_stdout(captura):
+            codigo = kbr_secrets.main(["status", *argumentos])
+        return codigo, captura.getvalue()
+
+    def test_marca_preenchida_e_vazia_sem_mostrar_valor(self):
+        self.escrever("# --- p ---\nA=valor-secretissimo\nB=\n")
+        codigo, saida = self.rodar_status()
+        self.assertIn("A: preenchida", saida)
+        self.assertIn("B: vazia", saida)
+        self.assertNotIn("valor-secretissimo", saida)
+        self.assertEqual(codigo, 1)
+
+    def test_marca_referencia_do_1password(self):
+        self.escrever("A=op://Cofre/Item/campo\n")
+        kbr_secrets.op_disponivel = lambda: True
+        _, saida = self.rodar_status()
+        self.assertIn("A: preenchida (1Password)", saida)
+        self.assertNotIn("op://Cofre/Item/campo", saida)
+
+    def test_status_nao_chama_op_read(self):
+        self.escrever("A=op://Cofre/Item/campo\n")
+        falso = OpFalso(saida="x")
+        kbr_secrets._rodar_op = falso
+        kbr_secrets.op_disponivel = lambda: True
+        self.rodar_status()
+        self.assertEqual(falso.chamadas, [])
+
+    def test_avisa_quando_op_falta(self):
+        self.escrever("A=op://Cofre/Item/campo\n")
+        kbr_secrets.op_disponivel = lambda: False
+        codigo, saida = self.rodar_status()
+        self.assertIn("NÃO encontrado", saida)
+        self.assertEqual(codigo, 1)
+
+    def test_tudo_preenchido_sai_zero(self):
+        self.escrever("A=1\nB=2\n")
+        codigo, _ = self.rodar_status()
+        self.assertEqual(codigo, 0)
+
+    def test_filtra_por_plugin(self):
+        self.escrever("# --- p1 ---\nA=1\n\n# --- p2 ---\nB=2\n")
+        _, saida = self.rodar_status("--plugin", "p1")
+        self.assertIn("A:", saida)
+        self.assertNotIn("B:", saida)
+
+    def test_repassa_avisos_de_linha_invalida(self):
+        self.escrever("lixo sem igual\nA=1\n")
+        _, saida = self.rodar_status()
+        self.assertIn("linha 1", saida)
+
+    def test_arquivo_inexistente_orienta_o_init(self):
+        codigo, saida = self.rodar_status()
+        self.assertEqual(codigo, 1)
+        self.assertIn("init", saida)
+
+
+class TesteEditar(BaseTemporaria):
+    """`cmd_editar` só decide o que abrir; o teste nunca deixa um editor real
+    aparecer — substitui `os.startfile` (Windows) e `subprocess.run` (macOS/Linux),
+    o que cobre o ramo que roda de verdade nesta plataforma."""
+
+    def setUp(self):
+        super().setUp()
+        self._startfile_original = getattr(kbr_secrets.os, "startfile", None)
+        self._subprocess_run_original = kbr_secrets.subprocess.run
+        self.chamadas = []
+        kbr_secrets.os.startfile = lambda caminho: self.chamadas.append(caminho)
+        kbr_secrets.subprocess.run = (
+            lambda *argumentos, **kwargs: self.chamadas.append((argumentos, kwargs)))
+
+    def tearDown(self):
+        if self._startfile_original is not None:
+            kbr_secrets.os.startfile = self._startfile_original
+        else:
+            del kbr_secrets.os.startfile
+        kbr_secrets.subprocess.run = self._subprocess_run_original
+        super().tearDown()
+
+    def rodar_editar(self):
+        captura = io.StringIO()
+        with contextlib.redirect_stdout(captura):
+            codigo = kbr_secrets.main(["editar"])
+        return codigo, captura.getvalue()
+
+    def test_arquivo_inexistente_orienta_o_init(self):
+        codigo, saida = self.rodar_editar()
+        self.assertEqual(codigo, 1)
+        self.assertIn("init", saida)
+        self.assertEqual(self.chamadas, [])
+
+    def test_arquivo_presente_abre_o_editor_e_devolve_zero(self):
+        self.escrever("A=1\n")
+        codigo, saida = self.rodar_editar()
+        self.assertEqual(codigo, 0)
+        self.assertEqual(len(self.chamadas), 1)
+        self.assertIn("editor", saida)
+
+    def test_erro_ao_abrir_orienta_abertura_manual(self):
+        self.escrever("A=1\n")
+
+        def _falha(*argumentos, **kwargs):
+            raise OSError("nenhum programa associado")
+
+        kbr_secrets.os.startfile = _falha
+        kbr_secrets.subprocess.run = _falha
+        codigo, saida = self.rodar_editar()
+        self.assertEqual(codigo, 1)
+        self.assertIn("explorador", saida)
+
+
+class TesteProteger(BaseTemporaria):
+    def setUp(self):
+        super().setUp()
+        self.settings = Path(self.tmp.name) / ".claude" / "settings.json"
+        kbr_secrets.caminho_settings = lambda: self.settings
+
+    def test_cria_o_settings_com_as_regras(self):
+        self.assertEqual(kbr_secrets.main(["proteger"]), 0)
+        dados = json.loads(self.settings.read_text(encoding="utf-8"))
+        self.assertIn("Read(~/.kbr/secrets.env)", dados["permissions"]["deny"])
+        self.assertIn("Edit(~/.kbr/cache/**)", dados["permissions"]["deny"])
+
+    def test_preserva_o_resto_do_settings(self):
+        self.settings.parent.mkdir(parents=True)
+        self.settings.write_text(
+            json.dumps({"model": "opus", "permissions": {"deny": ["Read(./.env)"]}}),
+            encoding="utf-8")
+        kbr_secrets.main(["proteger"])
+        dados = json.loads(self.settings.read_text(encoding="utf-8"))
+        self.assertEqual(dados["model"], "opus")
+        self.assertIn("Read(./.env)", dados["permissions"]["deny"])
+
+    def test_e_idempotente(self):
+        kbr_secrets.main(["proteger"])
+        kbr_secrets.main(["proteger"])
+        deny = json.loads(self.settings.read_text(encoding="utf-8"))["permissions"]["deny"]
+        self.assertEqual(len(deny), len(set(deny)))
+
+    def test_settings_invalido_nao_apaga_nada(self):
+        self.settings.parent.mkdir(parents=True)
+        self.settings.write_text("{ isso não é json", encoding="utf-8")
+        codigo = kbr_secrets.main(["proteger"])
+        self.assertEqual(codigo, 1)
+        self.assertIn("isso não é json", self.settings.read_text(encoding="utf-8"))
 
 
 class TestePermissoesComSubprocessSubstituido(unittest.TestCase):
