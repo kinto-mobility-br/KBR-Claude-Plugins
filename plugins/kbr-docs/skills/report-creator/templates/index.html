@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!--
+  {{PROJETO}} · MODELO DE ÍNDICE/CAPA de um conjunto de documentos.
+  Use como página inicial (index.html) de uma pasta de docs: lista as páginas
+  e dá o resumo do conjunto. Copie ./assets junto. Veja documento-modelo.html
+  para o modelo de um documento individual.
+-->
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Projeto — Índice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-brand">
+    <a class="hdr-logo" href="index.html" aria-label="{{PROJETO}}">
+      <img class="logo-light" src="assets/logo-claro.svg" alt="{{PROJETO}}" />
+      <img class="logo-dark" src="assets/logo-escuro.svg" alt="{{PROJETO}}" />
+    </a>
+    <div class="div"></div>
+    <div class="doc-meta">
+      <b>Projeto · Índice</b>
+      <small>Conjunto de documentos</small>
+    </div>
+  </div>
+  <div class="hdr-center">
+    <span class="hdr-tag">DD/MM/AAAA</span>
+  </div>
+  <div class="hdr-actions">
+    <div class="theme-toggle" role="group" aria-label="Tema">
+      <button data-set="light" aria-label="Claro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <button data-set="dark" aria-label="Escuro">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <aside class="side">
+    <nav>
+      <h6>Documentação · Projeto</h6>
+      <ul>
+        <li><a href="front-matter.html">Front Matter</a></li>
+        <li><a href="index.html" class="active">Índice (capa)</a></li>
+        <li><a href="documento-modelo.html">Documento (modelo)</a></li>
+        <li><a href="componentes.html">Componentes (referência)</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="content doc">
+
+    <nav class="crumbs">
+      <a href="#">pasta / projeto</a><span class="sep">/</span>
+      <span class="now">índice</span>
+    </nav>
+
+    <span class="doc-eyebrow">Categoria do projeto</span>
+    <h1 class="doc-h1">Nome do projeto</h1>
+    <p class="doc-lead">
+      Uma a três linhas descrevendo o conjunto de documentos e seu propósito.
+    </p>
+
+    <h2 class="doc-h2" id="paginas">Páginas</h2>
+    <div class="rel-grid">
+      <a class="rel-card" href="front-matter.html">
+        <span class="ic-circle"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></span>
+        <span class="cat">Controle</span>
+        <h5>Front Matter</h5>
+        <p>Metadados, histórico e detalhes das versões.</p>
+        <span class="arrow">Abrir  →</span>
+      </a>
+      <a class="rel-card" href="documento-modelo.html">
+        <span class="ic-circle"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+        <span class="cat">Categoria</span>
+        <h5>Documento (modelo)</h5>
+        <p>Descrição curta do documento.</p>
+        <span class="arrow">Abrir  →</span>
+      </a>
+      <a class="rel-card" href="componentes.html">
+        <span class="ic-circle is-success"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
+        <span class="cat">Referência</span>
+        <h5>Componentes</h5>
+        <p>Galeria completa de componentes do design system.</p>
+        <span class="arrow">Abrir  →</span>
+      </a>
+      <!-- Duplique um card acima para cada documento do conjunto -->
+    </div>
+
+    <footer class="ds-footer">
+      <div class="ftr-signature">
+        <div class="sig-label">
+          <img class="ftr-logo logo-light" src="assets/logo-claro.svg" alt="{{PROJETO}}" />
+          <img class="ftr-logo logo-dark" src="assets/logo-escuro.svg" alt="{{PROJETO}}" />
+          <small>Documento elaborado por</small>
+          <span class="seal">DD/MM/AAAA</span>
+        </div>
+        <div class="sig-author">
+          {{AVATAR}}
+          <div class="sig-info">
+            <b>{{AUTOR}}</b>
+            <span>{{CARGO}} · {{PROJETO}}</span>
+          </div>
+        </div>
+        <div class="sig-contact">
+          <a href="mailto:{{EMAIL}}">{{EMAIL}}</a>
+          <span>{{SITE}}</span>
+        </div>
+      </div>
+      <div class="ftr-bottom">
+        <span>{{RODAPE}}</span>
+        <span>Projeto · Índice</span>
+      </div>
+    </footer>
+
+  </main>
+
+  <aside class="toc">
+    <h6>Neste artigo</h6>
+    <ul>
+      <li><a href="#paginas" class="active">Páginas</a></li>
+    </ul>
+  </aside>
+</div>
+
+<div class="toast" id="toast">Copiado ✓</div>
+
+<script src="assets/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<!--
+  {{PROJETO}} · PÁGINA FRONT MATTER (1º link de todo conjunto de documentos).
+  É uma PÁGINA própria — não um bloco no topo dos demais docs.
+  Regra: Histórico de revisões e Detalhes das versões só recebem entrada
+  quando o Status for "Published".
+-->
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Front Matter — {{PROJETO}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-brand">
+    <a class="hdr-logo" href="front-matter.html" aria-label="{{PROJETO}}">
+      <img class="logo-light" src="assets/logo-claro.svg" alt="{{PROJETO}}" />
+      <img class="logo-dark" src="assets/logo-escuro.svg" alt="{{PROJETO}}" />
+    </a>
+    <div class="div"></div>
+    <div class="doc-meta">
+      <b>Projeto · Front Matter</b>
+      <small>Controle do documento</small>
+    </div>
+  </div>
+  <div class="hdr-center">
+    <span class="hdr-tag">v0.1 · DD/MM/AAAA</span>
+  </div>
+  <div class="hdr-actions">
+    <div class="theme-toggle" role="group" aria-label="Tema">
+      <button data-set="light" aria-label="Claro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <button data-set="dark" aria-label="Escuro">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- ESQUERDA: páginas do conjunto (cada link = um HTML; Front Matter é o 1º) -->
+  <aside class="side">
+    <nav>
+      <h6>Documentação · Projeto</h6>
+      <ul>
+        <li><a href="front-matter.html" class="active">Front Matter</a></li>
+        <li><a href="index.html">Índice (capa)</a></li>
+        <li><a href="documento-modelo.html">Documento (modelo)</a></li>
+        <li><a href="componentes.html">Componentes (referência)</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="content doc">
+
+    <nav class="crumbs">
+      <span class="now">Front Matter</span>
+    </nav>
+
+    <span class="doc-eyebrow">Controle do documento</span>
+    <h1 class="doc-h1">Front Matter</h1>
+    <p class="doc-lead">
+      Página de controle do documento (ou do conjunto): identificação, status, autoria,
+      classificação, histórico de revisões e detalhes de cada versão.
+    </p>
+
+    <!-- ====== FICHA ====== -->
+    <h2 class="doc-h2" id="ficha">Ficha do documento</h2>
+    <section class="frontmatter" aria-label="Front matter">
+      <div class="fm-head">
+        <span class="fm-title">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+          Metadados
+        </span>
+        <!-- Status: Draft=neutral · Em revisão=warning · Published=success · Obsoleto=danger -->
+        <span class="badge badge--success">Published</span>
+      </div>
+      <dl class="fm-grid">
+        <div><dt>ID do documento</dt><dd>KB-PROJETO-NN-SLUG</dd></div>
+        <div><dt>Título</dt><dd>Título do documento</dd></div>
+        <div><dt>Status</dt><dd><span class="badge badge--success">Published</span></dd></div>
+        <div><dt>Versão</dt><dd>1.1</dd></div>
+        <div><dt>Classificação</dt><dd>Interno</dd></div>
+        <div><dt>Projeto / Área</dt><dd>Projeto · Área</dd></div>
+        <div><dt>Autor</dt><dd>Nome do autor</dd></div>
+        <div><dt>Revisor / Aprovador</dt><dd>Nome do aprovador</dd></div>
+        <div><dt>Criado em</dt><dd>02/06/2026</dd></div>
+        <div><dt>Atualizado em</dt><dd>09/06/2026</dd></div>
+        <div class="fm-wide"><dt>Tags</dt><dd>tag1, tag2, tag3</dd></div>
+      </dl>
+    </section>
+
+    <!-- ====== HISTÓRICO ====== -->
+    <h2 class="doc-h2" id="historico">Histórico de revisões</h2>
+    <div class="callout callout--warning">
+      <div class="ico">!</div>
+      <div>
+        <b>Só registra quando Published</b>
+        <p>Em <span class="badge badge--neutral">Draft</span>/<span class="badge badge--warning">Em revisão</span> não adicione linhas — apenas atualize "Atualizado em" e, se for o caso, a Versão.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="t">
+        <thead><tr><th>Versão</th><th>Data</th><th>Autor</th><th>Status</th><th>Mudança</th></tr></thead>
+        <tbody>
+          <!-- Exemplo (mais recente no topo). Em Draft, troque por uma linha de empty-state. -->
+          <tr><td>1.1</td><td>09/06/2026</td><td>Nome do autor</td><td><span class="badge badge--success">Published</span></td><td>Ajustes pós-revisão; nova seção de troubleshooting.</td></tr>
+          <tr><td>1.0</td><td>02/06/2026</td><td>Nome do autor</td><td><span class="badge badge--success">Published</span></td><td>Publicação inicial.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ====== DETALHES DAS VERSÕES ====== -->
+    <h2 class="doc-h2" id="detalhes">Detalhes das versões</h2>
+    <p class="doc-lead" style="font-size:14px">
+      Um <code>&lt;details&gt;</code> por versão (mais recente no topo). Exemplo de como os dados
+      ficam dispostos — substitua pelos dados reais a cada publicação:
+    </p>
+    <div class="fm-notes" style="padding:0">
+
+      <details open>
+        <summary><span class="fm-ver">v1.1</span> Ajustes pós-revisão <span class="fm-when">· 09/06/2026</span></summary>
+        <div class="fm-note-body">
+          <dl class="fm-grid" style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin:0 0 12px">
+            <div><dt>Tipo</dt><dd>minor</dd></div>
+            <div><dt>Data</dt><dd>09/06/2026</dd></div>
+            <div><dt>Autor</dt><dd>Nome do autor</dd></div>
+            <div><dt>Aprovador</dt><dd>Nome do aprovador</dd></div>
+          </dl>
+          <p><b>Resumo:</b> correções de conteúdo e novos exemplos após a revisão técnica.</p>
+          <p style="margin-bottom:4px"><b>Mudanças</b></p>
+          <ul>
+            <li><span class="badge badge--success">Adicionado</span> seção de troubleshooting com 5 casos comuns.</li>
+            <li><span class="badge badge--info">Alterado</span> exemplos de código migrados para o novo padrão.</li>
+            <li><span class="badge badge--warning">Corrigido</span> link quebrado para a tabela de referência.</li>
+            <li><span class="badge badge--danger">Removido</span> nota obsoleta sobre o fluxo legado.</li>
+          </ul>
+          <div class="fm-note-meta">
+            <span>Seções afetadas: <b>3, 4, 6</b></span>
+            <span>Breaking change: <b>não</b></span>
+            <span>Ação requerida: <b>nenhuma</b></span>
+            <span>Ref.: <b>PR #142</b></span>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="fm-ver">v1.0</span> Publicação inicial <span class="fm-when">· 02/06/2026</span></summary>
+        <div class="fm-note-body">
+          <dl class="fm-grid" style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin:0 0 12px">
+            <div><dt>Tipo</dt><dd>major</dd></div>
+            <div><dt>Data</dt><dd>02/06/2026</dd></div>
+            <div><dt>Autor</dt><dd>Nome do autor</dd></div>
+            <div><dt>Aprovador</dt><dd>Nome do aprovador</dd></div>
+          </dl>
+          <p><b>Resumo:</b> primeira versão publicada do documento.</p>
+          <p style="margin-bottom:4px"><b>Mudanças</b></p>
+          <ul>
+            <li><span class="badge badge--success">Adicionado</span> estrutura completa: visão geral, detalhamento e referências.</li>
+            <li><span class="badge badge--success">Adicionado</span> Front Matter e histórico de revisões inicializados.</li>
+          </ul>
+          <div class="fm-note-meta">
+            <span>Seções afetadas: <b>todas</b></span>
+            <span>Breaking change: <b>—</b></span>
+            <span>Ação requerida: <b>—</b></span>
+            <span>Ref.: <b>PR #118</b></span>
+          </div>
+        </div>
+      </details>
+
+    </div>
+
+    <!-- ====== REGRA ====== -->
+    <h2 class="doc-h2" id="regra">Regra de governança</h2>
+    <ul>
+      <li><b>Histórico e Detalhes só quando <span class="badge badge--success">Published</span>.</b> Rascunhos não geram entrada.</li>
+      <li><b>Status:</b> <span class="badge badge--neutral">Draft</span> → <span class="badge badge--warning">Em revisão</span> → <span class="badge badge--success">Published</span> → <span class="badge badge--danger">Obsoleto</span>.</li>
+      <li><b>ID estável</b> por toda a vida do documento; a <b>Versão</b> evolui em SemVer simplificado.</li>
+    </ul>
+
+    <footer class="ds-footer">
+      <div class="ftr-signature">
+        <div class="sig-label">
+          <img class="ftr-logo logo-light" src="assets/logo-claro.svg" alt="{{PROJETO}}" />
+          <img class="ftr-logo logo-dark" src="assets/logo-escuro.svg" alt="{{PROJETO}}" />
+          <small>Documento elaborado por</small>
+          <span class="seal">v0.1 · DD/MM/AAAA</span>
+        </div>
+        <div class="sig-author">
+          {{AVATAR}}
+          <div class="sig-info">
+            <b>{{AUTOR}}</b>
+            <span>{{CARGO}} · {{PROJETO}}</span>
+          </div>
+        </div>
+        <div class="sig-contact">
+          <a href="mailto:{{EMAIL}}">{{EMAIL}}</a>
+          <span>{{SITE}}</span>
+        </div>
+      </div>
+      <div class="ftr-bottom">
+        <span>{{RODAPE}}</span>
+        <span>Projeto · Front Matter</span>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- DIREITA: âncoras desta página -->
+  <aside class="toc">
+    <h6>Neste artigo</h6>
+    <ul>
+      <li><a href="#ficha" class="active">Ficha do documento</a></li>
+      <li><a href="#historico">Histórico de revisões</a></li>
+      <li><a href="#detalhes">Detalhes das versões</a></li>
+      <li><a href="#regra">Regra de governança</a></li>
+    </ul>
+  </aside>
+</div>
+
+<div class="toast" id="toast">Copiado ✓</div>
+
+<script src="assets/docs.js"></script>
+</body>
+</html>

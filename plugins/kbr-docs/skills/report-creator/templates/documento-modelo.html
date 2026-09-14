@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  {{PROJETO}} · MODELO DE DOCUMENTO (template oficial)
+  ----------------------------------------------------------------------------
+  Como usar:
+    1. Copie este arquivo para a pasta do seu conjunto de docs, renomeando
+       (ex.: 01-meu-documento.html).
+    2. Garanta que a pasta tenha o diretório ./assets (docs.css + docs.js + logos).
+    3. Preencha o <title>, o Front Matter e as seções. Apague o que não usar.
+    4. Atualize a sidebar (navegação entre documentos) e o TOC (âncoras desta página).
+
+  Regras do padrão:
+    • Header só com logo + toggle de tema (sem Exportar/Compartilhar).
+    • Front Matter OBRIGATÓRIO no topo (logo após o lead).
+    • Histórico de revisões e Detalhes das versões: SÓ recebem entrada quando
+      o status for "Published". Em Draft/Em revisão, só muda "Atualizado em".
+    • Sidebar esquerda = navegação entre documentos. TOC direita = âncoras da página.
+    • O footer fica DENTRO do <main> (rola junto com o conteúdo).
+  ============================================================================
+-->
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Título do documento — {{PROJETO}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+
+<!-- ====== HEADER (logo + tema apenas) ====== -->
+<header class="hdr">
+  <div class="hdr-brand">
+    <a class="hdr-logo" href="index.html" aria-label="{{PROJETO}}">
+      <img class="logo-light" src="assets/logo-claro.svg" alt="{{PROJETO}}" />
+      <img class="logo-dark" src="assets/logo-escuro.svg" alt="{{PROJETO}}" />
+    </a>
+    <div class="div"></div>
+    <div class="doc-meta">
+      <b>Projeto · Documento</b>
+      <small>Subtítulo / categoria</small>
+    </div>
+  </div>
+  <div class="hdr-center">
+    <span class="hdr-tag">v0.1 · DD/MM/AAAA</span>
+  </div>
+  <div class="hdr-actions">
+    <div class="theme-toggle" role="group" aria-label="Tema">
+      <button data-set="light" aria-label="Claro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <button data-set="dark" aria-label="Escuro">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- ============ SIDEBAR (navegação entre documentos) ============ -->
+  <aside class="side">
+    <nav>
+      <h6>Documentação · Projeto</h6>
+      <ul>
+        <li><a href="front-matter.html">Front Matter</a></li>
+        <li><a href="index.html">Índice (capa)</a></li>
+        <li><a href="documento-modelo.html" class="active">Documento (modelo)</a></li>
+        <li><a href="componentes.html">Componentes (referência)</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- ============ CONTENT ============ -->
+  <main class="content doc">
+
+    <nav class="crumbs">
+      <a href="index.html">Projeto</a><span class="sep">/</span>
+      <span class="now">Título do documento</span>
+    </nav>
+
+    <span class="doc-eyebrow">Categoria · Subárea</span>
+    <h1 class="doc-h1">Título do documento</h1>
+    <p class="doc-lead">
+      Resumo de uma a três linhas explicando o objetivo do documento e para quem ele serve.
+    </p>
+
+    <!-- Os metadados (ID, status, versão, histórico, detalhes) ficam na PÁGINA
+         Front Matter (front-matter.html) — o 1º link do menu, não aqui. -->
+
+    <!-- ====== SEÇÕES — exemplos de componentes. Apague/duplique conforme precisar ====== -->
+
+    <h2 class="doc-h2" id="secao-1">Seção 1 — texto e callout</h2>
+    <p>Parágrafo de conteúdo. Use <code>code inline</code>, <b>negrito</b> e <a href="#">links</a>.</p>
+
+    <div class="callout callout--info">
+      <div class="ico">i</div>
+      <div>
+        <b>Destaque</b>
+        <p>Callout informativo. Variações: <code>--info</code>, <code>--success</code>, <code>--warning</code>, <code>--danger</code>, <code>--neutral</code>.</p>
+      </div>
+    </div>
+
+    <h2 class="doc-h2" id="secao-2">Seção 2 — tabela e passo-a-passo</h2>
+
+    <div class="table-wrap">
+      <table class="t">
+        <thead><tr><th>Coluna A</th><th>Coluna B</th><th>Coluna C</th></tr></thead>
+        <tbody>
+          <tr class="zebra"><td>Valor</td><td>Valor</td><td>Valor</td></tr>
+          <tr class="zebra"><td>Valor</td><td>Valor</td><td>Valor</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ol class="steps">
+      <li>
+        <h4>Primeiro passo</h4>
+        <p>Descrição do passo.</p>
+      </li>
+      <li>
+        <h4>Segundo passo</h4>
+        <p>Descrição do passo.</p>
+      </li>
+    </ol>
+
+    <h2 class="doc-h2" id="secao-3">Seção 3 — exemplo de código (Python/Java/C#)</h2>
+    <p>Padrão: todo exemplo de código vai nas três linguagens, em abas.</p>
+
+    <div class="codetabs">
+      <div class="codetabs-bar">
+        <button class="codetab active" type="button">Python</button>
+        <button class="codetab" type="button">Java</button>
+        <button class="codetab" type="button">C#</button>
+        <button class="codetabs-copy" type="button">Copiar</button>
+      </div>
+      <div class="codetabs-body">
+        <div class="codetabs-panel active"><pre><code><span class="tok-k">def</span> <span class="tok-fn">exemplo</span>():
+    <span class="tok-k">return</span> <span class="tok-s">"olá"</span></code></pre></div>
+        <div class="codetabs-panel"><pre><code><span class="tok-n">String</span> <span class="tok-fn">exemplo</span>() {
+    <span class="tok-k">return</span> <span class="tok-s">"olá"</span>;
+}</code></pre></div>
+        <div class="codetabs-panel"><pre><code><span class="tok-n">string</span> <span class="tok-fn">Exemplo</span>() =&gt; <span class="tok-s">"olá"</span>;</code></pre></div>
+      </div>
+    </div>
+
+    <h2 class="doc-h2" id="secao-4">Seção 4 — FAQ</h2>
+    <div class="faq">
+      <details open>
+        <summary>Pergunta de exemplo?</summary>
+        <div class="faq-body"><p>Resposta de exemplo.</p></div>
+      </details>
+      <details>
+        <summary>Outra pergunta?</summary>
+        <div class="faq-body"><p>Outra resposta.</p></div>
+      </details>
+    </div>
+
+    <!-- Cards de navegação relacionada (opcional) -->
+    <div class="rel-grid">
+      <a class="rel-card" href="index.html">
+        <span class="cat">Projeto</span>
+        <h5>Visão geral</h5>
+        <p>Voltar ao índice do conjunto.</p>
+        <span class="arrow">←  Início</span>
+      </a>
+    </div>
+
+    <!-- ====== FOOTER (dentro do main) ====== -->
+    <footer class="ds-footer">
+      <div class="ftr-signature">
+        <div class="sig-label">
+          <img class="ftr-logo logo-light" src="assets/logo-claro.svg" alt="{{PROJETO}}" />
+          <img class="ftr-logo logo-dark" src="assets/logo-escuro.svg" alt="{{PROJETO}}" />
+          <small>Documento elaborado por</small>
+          <span class="seal">v0.1 · DD/MM/AAAA</span>
+        </div>
+        <div class="sig-author">
+          {{AVATAR}}
+          <div class="sig-info">
+            <b>{{AUTOR}}</b>
+            <span>{{CARGO}} · {{PROJETO}}</span>
+          </div>
+        </div>
+        <div class="sig-contact">
+          <a href="mailto:{{EMAIL}}">{{EMAIL}}</a>
+          <span>{{SITE}}</span>
+        </div>
+      </div>
+      <div class="ftr-bottom">
+        <span>{{RODAPE}}</span>
+        <span>Projeto · Documento · v0.1</span>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- ============ TOC (âncoras desta página) ============ -->
+  <aside class="toc">
+    <h6>Neste artigo</h6>
+    <ul>
+      <li><a href="#secao-1" class="active">Seção 1</a></li>
+      <li><a href="#secao-2">Seção 2</a></li>
+      <li><a href="#secao-3">Seção 3</a></li>
+      <li><a href="#secao-4">Seção 4</a></li>
+    </ul>
+  </aside>
+</div>
+
+<div class="toast" id="toast">Copiado ✓</div>
+
+<script src="assets/docs.js"></script>
+</body>
+</html>

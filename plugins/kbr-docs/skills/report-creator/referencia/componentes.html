@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{PROJETO}} · Componentes (referência do template)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+
+<!-- ====== HEADER PADRÃO ====== -->
+<header class="hdr">
+  <div class="hdr-brand">
+    <a class="hdr-logo" href="index.html" aria-label="{{PROJETO}}">
+      <img class="logo-light" src="assets/logo-claro.svg" alt="{{PROJETO}}" />
+      <img class="logo-dark" src="assets/logo-escuro.svg" alt="{{PROJETO}}" />
+    </a>
+    <div class="div"></div>
+    <div class="doc-meta">
+      <b>Docs Design System · Rounded + Dark</b>
+      <small>Variação rounded · v1.1</small>
+    </div>
+  </div>
+  <div class="hdr-center">
+    <span class="hdr-tag">v1.1 · 28/05/2026</span>
+  </div>
+  <div class="hdr-actions">
+    <div class="theme-toggle" role="group" aria-label="Tema">
+      <button data-set="light" aria-label="Claro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <button data-set="dark" aria-label="Escuro">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side">
+    <nav>
+      <h6>Documentação · Projeto</h6>
+      <ul>
+        <li><a href="front-matter.html">Front Matter</a></li>
+        <li><a href="index.html">Índice (capa)</a></li>
+        <li><a href="documento-modelo.html">Documento (modelo)</a></li>
+        <li><a href="componentes.html" class="active">Componentes (referência)</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- ============ CONTENT ============ -->
+  <main class="content doc">
+
+    <nav class="crumbs">
+      <a href="#">Design System</a><span class="sep">/</span>
+      <a href="#">Docs</a><span class="sep">/</span>
+      <span class="now">Rounded + Dark</span>
+    </nav>
+
+    <span class="doc-eyebrow">Variação · Docs DS</span>
+    <h1 class="doc-h1">{{PROJETO}} Docs — Rounded &amp; Dark</h1>
+    <p class="doc-lead">
+      Variação suave do design system de documentação: bordas arredondadas em todos os
+      componentes, sombras sutis e suporte completo a tema escuro com toggle no canto
+      superior da sidebar. Use o botão sol/lua para alternar.
+    </p>
+
+    <div class="doc-meta-bar">
+      <div><span>Atualizado</span> <b>28 mai 2026</b></div>
+      <div class="cluster">
+        <span class="badge badge--solid">v1.1</span>
+        <span class="badge badge--success badge--dot">Dark ready</span>
+      </div>
+    </div>
+
+    <!-- ============ FRONT MATTER (padrão de documento) ============ -->
+    <h2 class="doc-h2" id="frontmatter">Front Matter<a href="#frontmatter" class="h-anchor">#</a></h2>
+    <p>
+      Bloco <b>fixo e obrigatório no topo de todo documento</b> gerado a partir deste
+      template. Padroniza os metadados (identificação, status, autoria, classificação) e
+      carrega o <b>histórico de revisões</b>. Copie o markup abaixo logo após o
+      <code>&lt;h1&gt;</code>/lead de cada documento e preencha os campos.
+    </p>
+
+    <h3 class="doc-h3" id="frontmatter-campos">Campos</h3>
+    <div class="table-wrap">
+      <table class="t">
+        <thead><tr><th>Campo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr class="zebra"><td><b>ID do documento</b></td><td><span class="badge badge--danger">Sim</span></td><td>Identificador estável e único (ex.: <code>KB-&lt;PROJETO&gt;-&lt;NN&gt;-&lt;SLUG&gt;</code>). Não muda ao longo da vida do doc.</td></tr>
+          <tr class="zebra"><td><b>Título</b></td><td><span class="badge badge--danger">Sim</span></td><td>Nome do documento.</td></tr>
+          <tr class="zebra"><td><b>Status</b></td><td><span class="badge badge--danger">Sim</span></td><td><span class="badge badge--neutral">Draft</span> · <span class="badge badge--warning">Em revisão</span> · <span class="badge badge--success">Published</span> · <span class="badge badge--danger">Obsoleto</span></td></tr>
+          <tr class="zebra"><td><b>Versão</b></td><td><span class="badge badge--danger">Sim</span></td><td>SemVer simplificado (ex.: <code>0.1</code>, <code>1.0</code>, <code>1.1</code>).</td></tr>
+          <tr class="zebra"><td><b>Classificação</b></td><td><span class="badge badge--danger">Sim</span></td><td>Público · Interno · Confidencial.</td></tr>
+          <tr class="zebra"><td><b>Projeto / Área</b></td><td><span class="badge badge--warning">Recom.</span></td><td>Contexto organizacional.</td></tr>
+          <tr class="zebra"><td><b>Autor</b></td><td><span class="badge badge--danger">Sim</span></td><td>Responsável pela elaboração.</td></tr>
+          <tr class="zebra"><td><b>Revisor / Aprovador</b></td><td><span class="badge badge--warning">Recom.</span></td><td>Quem revisa/aprova antes de publicar.</td></tr>
+          <tr class="zebra"><td><b>Criado em</b> / <b>Atualizado em</b></td><td><span class="badge badge--danger">Sim</span></td><td>Datas <code>DD/MM/AAAA</code>.</td></tr>
+          <tr class="zebra"><td><b>Tags</b></td><td><span class="badge badge--warning">Recom.</span></td><td>Palavras-chave para indexação/RAG.</td></tr>
+          <tr class="zebra"><td><b>Histórico de revisões</b></td><td><span class="badge badge--danger">Sim</span></td><td>Tabela versionada (visão de índice) — ver a regra abaixo.</td></tr>
+          <tr class="zebra"><td><b>Detalhes das versões</b></td><td><span class="badge badge--danger">Sim</span></td><td>Acordeão com o detalhamento de cada versão (o que mudou, por quê, seções afetadas, breaking changes). Segue a mesma regra do histórico.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout--warning">
+      <div class="ico">!</div>
+      <div>
+        <b>Regra do histórico — só quando Published</b>
+        <p>
+          O <b>Histórico de revisões e os Detalhes das versões só recebem uma nova entrada
+          quando o documento é promovido a <span class="badge badge--success">Published</span></b>.
+          Edições em <span class="badge badge--neutral">Draft</span> ou
+          <span class="badge badge--warning">Em revisão</span> <u>não</u> geram entrada —
+          apenas atualizam o campo <b>Atualizado em</b> e, se for o caso, a <b>Versão</b>.
+          Assim tanto a tabela quanto o detalhamento refletem o que de fato foi publicado,
+          não cada rascunho.
+        </p>
+      </div>
+    </div>
+
+    <h3 class="doc-h3" id="frontmatter-exemplo">Exemplo (documento publicado)</h3>
+
+    <section class="frontmatter" aria-label="Front matter">
+      <div class="fm-head">
+        <span class="fm-title">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+          Front Matter
+        </span>
+        <span class="badge badge--success">Published</span>
+      </div>
+      <dl class="fm-grid">
+        <div><dt>ID do documento</dt><dd>KB-EXEMPLO-01-MODELO</dd></div>
+        <div><dt>Título</dt><dd>Documento de exemplo</dd></div>
+        <div><dt>Status</dt><dd><span class="badge badge--success">Published</span></dd></div>
+        <div><dt>Versão</dt><dd>1.1</dd></div>
+        <div><dt>Classificação</dt><dd>Interno</dd></div>
+        <div><dt>Projeto / Área</dt><dd>Plataforma · Dados</dd></div>
+        <div><dt>Autor</dt><dd>Fabio A. B. Rodrigues</dd></div>
+        <div><dt>Revisor / Aprovador</dt><dd>—</dd></div>
+        <div><dt>Criado em</dt><dd>02/05/2026</dd></div>
+        <div><dt>Atualizado em</dt><dd>28/05/2026</dd></div>
+        <div class="fm-wide"><dt>Tags</dt><dd>exemplo, padrão, front-matter</dd></div>
+      </dl>
+      <div class="fm-history">
+        <div class="fm-history-head">
+          <h4>Histórico de revisões</h4>
+          <span class="fm-rule">Atualizar só quando Published</span>
+        </div>
+        <div class="table-wrap">
+          <table class="t">
+            <thead><tr><th>Versão</th><th>Data</th><th>Autor</th><th>Status</th><th>Mudança</th></tr></thead>
+            <tbody>
+              <tr><td>1.1</td><td>28/05/2026</td><td>Fabio A. B. Rodrigues</td><td><span class="badge badge--success">Published</span></td><td>Revisão de seções 2 e 4; novos exemplos.</td></tr>
+              <tr><td>1.0</td><td>10/05/2026</td><td>Fabio A. B. Rodrigues</td><td><span class="badge badge--success">Published</span></td><td>Publicação inicial.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="fm-notes">
+        <h4>Detalhes das versões</h4>
+        <details open>
+          <summary><span class="fm-ver">v1.1</span> Revisão de seções 2 e 4 <span class="fm-when">· 28/05/2026</span></summary>
+          <div class="fm-note-body">
+            <p>Atualização de conteúdo após a primeira rodada de revisão formal.</p>
+            <ul>
+              <li><b>Alterado:</b> exemplos da seção 2 reescritos para o novo padrão de código.</li>
+              <li><b>Adicionado:</b> seção 4 com casos de borda e troubleshooting.</li>
+              <li><b>Removido:</b> nota obsoleta sobre o fluxo legado.</li>
+            </ul>
+            <p><b>Breaking change:</b> nenhum · <b>Ação requerida:</b> nenhuma.</p>
+            <div class="fm-note-meta"><span>Status: <b>Published</b></span><span>Autor: <b>Fabio A. B. Rodrigues</b></span><span>Aprovador: <b>—</b></span></div>
+          </div>
+        </details>
+        <details>
+          <summary><span class="fm-ver">v1.0</span> Publicação inicial <span class="fm-when">· 10/05/2026</span></summary>
+          <div class="fm-note-body">
+            <p>Primeira versão publicada do documento.</p>
+            <ul>
+              <li>Estrutura completa: visão geral, detalhamento técnico e referências.</li>
+              <li>Front Matter e histórico de revisões inicializados.</li>
+            </ul>
+            <div class="fm-note-meta"><span>Status: <b>Published</b></span><span>Autor: <b>Fabio A. B. Rodrigues</b></span><span>Aprovador: <b>—</b></span></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============ OVERVIEW ============ -->
+    <h2 class="doc-h2" id="overview">Visão geral<a href="#overview" class="h-anchor">#</a></h2>
+    <p>
+      Esta variação não substitui o sistema flat &mdash; <strong>é uma alternativa</strong> para contextos onde
+      a documentação convive com painéis de produto (admin, BI, configurações) que demandam uma estética
+      mais "soft UI". Tudo se mantém compatível com os tokens {{PROJETO}} core.
+    </p>
+
+    <div class="callout callout--info">
+      <span class="ico">i</span>
+      <div>
+        <b>Quando usar esta variação</b>
+        <p>Painéis internos, dashboards executivos, ferramentas de configuração. Para documentação pública e
+        runbooks operacionais, prefira a variação flat &mdash; mais densidade visual e legibilidade contínua.</p>
+      </div>
+    </div>
+
+    <!-- ============ TOKENS ============ -->
+    <h2 class="doc-h2" id="tokens">Tokens — light vs dark<a href="#tokens" class="h-anchor">#</a></h2>
+    <p>
+      Os tokens são <strong>semânticos</strong> (<code>--surface</code>, <code>--text</code>, <code>--info</code>),
+      não literais. O atributo <code>data-theme</code> em <code>&lt;html&gt;</code> troca o conjunto inteiro.
+      Componentes não conhecem o tema atual &mdash; só consomem tokens.
+    </p>
+
+    <div class="callout callout--neutral">
+      <span class="ico">›</span>
+      <div>
+        <b>Persistência</b>
+        <p>A escolha é gravada em <code>localStorage</code> sob a chave <code>kinto-theme</code>.
+        Sem escolha explícita, respeita <code>prefers-color-scheme</code> do sistema.</p>
+      </div>
+    </div>
+
+    <!-- ============ RADIUS ============ -->
+    <h2 class="doc-h2" id="radius">Escala de radius<a href="#radius" class="h-anchor">#</a></h2>
+    <p>Sete pontos &mdash; do <em>code inline</em> ao <em>pill</em>:</p>
+    <div class="table-wrap">
+      <table class="t">
+        <thead><tr><th>Token</th><th>Valor</th><th>Uso típico</th></tr></thead>
+        <tbody>
+          <tr><td><code>--r-xs</code></td><td><b>3px</b></td><td>Code inline, dots de legenda, badges em sparkline</td></tr>
+          <tr><td><code>--r-sm</code></td><td><b>5px</b></td><td>Badges, kbd</td></tr>
+          <tr><td><code>--r</code></td><td><b>8px</b></td><td>Botões, inputs, top de bar charts, tooltips</td></tr>
+          <tr><td><code>--r-md</code></td><td><b>10px</b></td><td>Code blocks, callouts, tabelas, blockquote</td></tr>
+          <tr><td><code>--r-lg</code></td><td><b>14px</b></td><td>Cards de doc, containers de chart, banners</td></tr>
+          <tr><td><code>--r-xl</code></td><td><b>20px</b></td><td>Hero cards, modais grandes</td></tr>
+          <tr><td><code>--r-pill</code></td><td><b>999px</b></td><td>Pills, dots, avatares, progress, donut, gauge</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ============ CALLOUTS ============ -->
+    <h2 class="doc-h2" id="callouts">Callouts<a href="#callouts" class="h-anchor">#</a></h2>
+    <p>Ícone agora vira pílula circular com cor sólida. Borda-esquerda mantém a semântica.</p>
+
+    <div class="callout callout--info">
+      <span class="ico">i</span>
+      <div><b>Informação</b><p>Contexto adicional ou dica estrutural &mdash; "fyi" para o leitor.</p></div>
+    </div>
+    <div class="callout callout--success">
+      <span class="ico">✓</span>
+      <div><b>Sucesso</b><p>Confirmação de que algo foi aplicado. Use ao fim de tutoriais ou validações.</p></div>
+    </div>
+    <div class="callout callout--warning">
+      <span class="ico">!</span>
+      <div><b>Atenção</b><p>Risco ou nuance importante &mdash; ignorar gera retrabalho.</p></div>
+    </div>
+    <div class="callout callout--danger">
+      <span class="ico">×</span>
+      <div><b>Crítico</b><p>Bloqueador, perda de dados ou ação irreversível. Sempre indicar mitigação.</p></div>
+    </div>
+    <div class="callout callout--neutral">
+      <span class="ico">›</span>
+      <div><b>Nota</b><p>Aside informativo. Não exige ação.</p></div>
+    </div>
+
+    <!-- ============ CODE ============ -->
+    <h2 class="doc-h2" id="code">Blocos de código<a href="#code" class="h-anchor">#</a></h2>
+    <p>Code blocks sempre escuros (independente do tema) com <code>border-radius</code> agora visível em ambos os lados.</p>
+
+    <div class="code-block">
+      <div class="code-head">
+        <span class="file">middleware/auth.py</span>
+        <span class="lang">Python</span>
+        <button class="copy" data-copy="auth-snippet">Copiar</button>
+      </div>
+      <pre id="auth-snippet"><code><span class="tok-k">from</span> <span class="tok-n">fastapi</span> <span class="tok-k">import</span> Depends, HTTPException
+<span class="tok-k">from</span> <span class="tok-n">jose</span> <span class="tok-k">import</span> jwt, JWTError
+
+<span class="tok-c"># Valida token Azure AD via JWKS público</span>
+<span class="tok-k">def</span> <span class="tok-fn">verify_token</span>(token: <span class="tok-n">str</span> = <span class="tok-fn">Depends</span>(oauth2_scheme)):
+    <span class="tok-k">try</span>:
+        payload = jwt.<span class="tok-fn">decode</span>(token, JWKS, algorithms=[<span class="tok-s">"RS256"</span>], audience=AUDIENCE)
+        <span class="tok-k">return</span> payload[<span class="tok-s">"sub"</span>]
+    <span class="tok-k">except</span> JWTError:
+        <span class="tok-k">raise</span> <span class="tok-fn">HTTPException</span>(status_code=<span class="tok-n">401</span>, detail=<span class="tok-s">"Token inválido"</span>)</code></pre>
+    </div>
+
+    <div class="terminal">
+<span class="prompt"></span>op item get "AWS Dev - CLI Access Key" --vault "Kinto Brasil"<br/>
+<span class="out">id: abc123… · vault: Kinto Brasil</span><br/>
+<span class="prompt"></span>aws sts get-caller-identity<br/>
+<span class="out">{<br/>&nbsp;&nbsp;"Account": "123456789012",<br/>&nbsp;&nbsp;"Arn":     "arn:aws:iam::123456789012:user/dev-cli"<br/>}</span>
+    </div>
+
+    <div class="diff">
+      <div class="ctx">  &nbsp;&nbsp;<span class="tok-k">def</span> verify_token(token):</div>
+      <div class="del">      <span class="tok-c">    return jwt.decode(token, SECRET)</span></div>
+      <div class="add">      <span class="tok-c">    return jwt.decode(token, JWKS, algorithms=["RS256"])</span></div>
+      <div class="ctx">  &nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-k">if</span> not valid:</div>
+      <div class="del">  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise ValueError(<span class="tok-s">"bad"</span>)</div>
+      <div class="add">  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise HTTPException(401, <span class="tok-s">"Token inválido"</span>)</div>
+    </div>
+
+    <!-- ============ TABLES ============ -->
+    <h2 class="doc-h2" id="tables">Tabelas<a href="#tables" class="h-anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table class="t">
+        <thead><tr>
+          <th>Parâmetro</th><th>Tipo</th><th>Default</th><th>Descrição</th>
+        </tr></thead>
+        <tbody>
+          <tr class="zebra"><td><code>tenant_id</code></td><td>string</td><td>—</td><td>ID do tenant Azure AD da {{PROJETO}} Brasil</td></tr>
+          <tr class="zebra"><td><code>client_id</code></td><td>string</td><td>—</td><td>App registration para o middleware</td></tr>
+          <tr class="zebra"><td><code>cache_ttl</code></td><td>int (s)</td><td>300</td><td>TTL do cache de tokens em segundos</td></tr>
+          <tr class="zebra"><td><code>retry_max</code></td><td>int</td><td>3</td><td>Tentativas em falha transiente do BC</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-wrap">
+      <table class="t cmp">
+        <thead><tr>
+          <th></th>
+          <th scope="col">{{PROJETO}} Share</th>
+          <th scope="col" class="best">{{PROJETO}} One Personal</th>
+          <th scope="col">{{PROJETO}} One Fleet</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Duração</td><td>Por dia/hora</td><td>12 a 36 meses</td><td>24 a 48 meses</td></tr>
+          <tr><td>Seguro</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Manutenção</td><td class="x">×</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>IPVA</td><td class="x">×</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Telemetria</td><td class="x">×</td><td class="x">×</td><td class="check">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ============ BADGES ============ -->
+    <h2 class="doc-h2" id="badges">Badges &amp; pills<a href="#badges" class="h-anchor">#</a></h2>
+    <div class="cluster-lg">
+      <span class="badge">Default</span>
+      <span class="badge badge--info">Info</span>
+      <span class="badge badge--success">Estável</span>
+      <span class="badge badge--warning">Beta</span>
+      <span class="badge badge--danger">Deprecated</span>
+      <span class="badge badge--solid">v2.4.1</span>
+      <span class="badge badge--success badge--dot">Healthy</span>
+      <span class="badge badge--danger badge--dot">Down</span>
+    </div>
+    <div class="cluster-lg">
+      <span class="pill pill--active">Todos</span>
+      <span class="pill">Aluguel</span>
+      <span class="pill">Assinatura</span>
+      <span class="pill">Frota</span>
+    </div>
+
+    <!-- ============ CAMPOS / FILTRO ============ -->
+    <h2 class="doc-h2" id="fields">Campos &amp; filtro<a href="#fields" class="h-anchor">#</a></h2>
+    <p>Input de texto/filtro no estilo dos pills (mesma superfície e borda), porém com cantos discretos (<code>--r-sm</code>). Hover/foco na cor primária; respeita os temas claro e escuro. Classes equivalentes: <code>.filter</code> ou <code>.field</code> (modificadores <code>--sm</code>, <code>--block</code>).</p>
+    <div class="cluster-lg" style="align-items:center">
+      <input class="filter" type="text" placeholder="filtrar por nome…">
+      <input class="filter filter--sm" type="text" placeholder="menor (--sm)">
+      <input class="field" type="text" placeholder="alias .field">
+      <input class="filter" type="text" placeholder="desabilitado" disabled>
+    </div>
+
+    <!-- ============ KBD ============ -->
+    <h2 class="doc-h2" id="kbd">Atalhos<a href="#kbd" class="h-anchor">#</a></h2>
+    <p>Pressione <kbd>Ctrl</kbd> + <kbd>K</kbd> (ou <kbd>⌘</kbd> + <kbd>K</kbd>). Navegue com <kbd>↑</kbd> <kbd>↓</kbd> e confirme com <kbd>Enter</kbd>.</p>
+
+    <!-- ============ STEPS ============ -->
+    <h2 class="doc-h2" id="steps">Passo-a-passo<a href="#steps" class="h-anchor">#</a></h2>
+    <ol class="steps">
+      <li class="done"><div><h4>Provisione o App Registration</h4><p>Crie o app em <em>Entra ID › App registrations</em> e anote tenant + client.</p></div></li>
+      <li class="done"><div><h4>Armazene credenciais no 1Password</h4><p>Vault <code>Kinto Brasil</code>, item <code>Dynamics BC - APIM</code>.</p></div></li>
+      <li class="current"><div><h4>Configure as policies do APIM</h4><p><code>validate-jwt</code> + <code>rate-limit-by-key</code> + <code>set-backend-service</code>.</p></div></li>
+      <li><div><h4>Teste end-to-end</h4><p>Coleção Postman <em>{{PROJETO}} Middleware - Smoke</em>, env <code>dev-apim</code>.</p></div></li>
+    </ol>
+
+    <!-- ============ TABS ============ -->
+    <h2 class="doc-h2" id="tabs">Tabs<a href="#tabs" class="h-anchor">#</a></h2>
+    <div class="tabs">
+      <input type="radio" name="tabset" id="tb1" checked>
+      <input type="radio" name="tabset" id="tb2">
+      <input type="radio" name="tabset" id="tb3">
+      <div class="tab-labels">
+        <label for="tb1">cURL</label>
+        <label for="tb2">Python</label>
+        <label for="tb3">PowerShell</label>
+      </div>
+      <div class="tab-panels">
+        <div class="panel panel--1">
+          <pre><code><span class="tok-c"># Obter token</span>
+curl -X POST https://login.microsoftonline.com/$TENANT/oauth2/v2.0/token \
+  -d <span class="tok-s">"client_id=$CLIENT_ID"</span> \
+  -d <span class="tok-s">"grant_type=client_credentials"</span> \
+  -d <span class="tok-s">"scope=$RESOURCE/.default"</span></code></pre>
+        </div>
+        <div class="panel panel--2">
+          <pre><code><span class="tok-k">import</span> msal
+app = msal.<span class="tok-fn">ConfidentialClientApplication</span>(CLIENT_ID, client_credential=SECRET, authority=AUTH)
+token = app.<span class="tok-fn">acquire_token_for_client</span>(scopes=[<span class="tok-s">f"{RES}/.default"</span>])</code></pre>
+        </div>
+        <div class="panel panel--3">
+          <pre><code>$token = az account get-access-token --resource <span class="tok-s">$env:RESOURCE</span> --query accessToken -o tsv</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ FAQ ============ -->
+    <h2 class="doc-h2" id="faq">FAQ<a href="#faq" class="h-anchor">#</a></h2>
+    <div class="faq">
+      <details open>
+        <summary>Por que adotar a versão rounded em vez da flat?</summary>
+        <div class="faq-body"><p>Quando a doc convive com produto interno (admin, BI), a estética rounded reduz o atrito visual entre páginas. Para docs públicas, a flat ainda é a recomendada.</p></div>
+      </details>
+      <details>
+        <summary>O tema escuro afeta a paleta primária da marca?</summary>
+        <div class="faq-body"><p>Sim — em dark mode o azul <code>#00708D</code> é trocado por <code>#4AB5D0</code> (mesma família, luminosidade ajustada para contraste WCAG AA sobre surface escuro).</p></div>
+      </details>
+      <details>
+        <summary>Como reaproveitar os tokens em outro projeto?</summary>
+        <div class="faq-body"><p>Copie os blocos <code>:root[data-theme="light"]</code> e <code>[data-theme="dark"]</code> + o snippet JS de toggle. Os componentes que consomem só tokens semânticos seguem o tema automaticamente.</p></div>
+      </details>
+    </div>
+
+    <!-- ============ RELATED ============ -->
+    <h2 class="doc-h2" id="related">Cards relacionados<a href="#related" class="h-anchor">#</a></h2>
+    <div class="rel-grid">
+      <a class="rel-card" href="kinto-design-system.html"><span class="cat">Core</span><h5>Design System Core</h5><p>Tokens originais, paleta e tipografia extraídos do site.</p><span class="arrow">Abrir →</span></a>
+      <a class="rel-card" href="kinto-docs-design-system.html"><span class="cat">Docs Flat</span><h5>Variação flat (sem radius)</h5><p>Identidade fiel ao site {{PROJETO}} — borda quadrada, sem sombras.</p><span class="arrow">Abrir →</span></a>
+      <a class="rel-card" href="#"><span class="cat">Próximos</span><h5>Line + Scatter charts (CSS)</h5><p>Em planejamento — SVG inline e radial-gradient.</p><span class="arrow">Roadmap →</span></a>
+    </div>
+
+    <!-- ============ CHANGELOG ============ -->
+    <h2 class="doc-h2" id="changelog">Timeline<a href="#changelog" class="h-anchor">#</a></h2>
+    <ul class="timeline">
+      <li class="major">
+        <time>28 mai 2026</time>
+        <h4><span class="v">v1.1</span>Variação rounded + dark mode</h4>
+        <p>Border-radius em todos componentes, paleta dark com primary ajustado para contraste AA.</p>
+      </li>
+      <li>
+        <time>28 mai 2026</time>
+        <h4><span class="v">v1.0</span>Docs DS — versão flat</h4>
+        <p>Primeiros primitivos + galeria de gráficos CSS-only.</p>
+      </li>
+    </ul>
+
+    <!-- ============================================================
+         EXTRAS — cards, KPIs, hero, ic-list (extensões do design system)
+         ============================================================ -->
+    <h2 class="doc-h2" id="extras">Cards &amp; KPIs<a href="#extras" class="h-anchor">#</a></h2>
+
+    <h3 class="doc-h3">Hero card</h3>
+    <div class="hero-card">
+      <span class="ic-circle"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+      <div>
+        <h3>Título do destaque</h3>
+        <p>Bloco de destaque com gradiente sutil e ícone. Bom para a mensagem principal de uma seção.</p>
+      </div>
+    </div>
+
+    <h3 class="doc-h3">Stat cards (KPIs)</h3>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-num">128<small>k</small></div>
+          <span class="ic-circle ic-sm"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+        </div>
+        <div class="stat-lbl">Métrica A</div>
+        <p class="stat-sub">Descrição curta do indicador.</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-num">99,9<small>%</small></div>
+          <span class="ic-circle ic-sm is-success"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+        </div>
+        <div class="stat-lbl">Métrica B</div>
+        <p class="stat-sub">Outro indicador com variação de cor.</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-num">R$ 0</div>
+          <span class="ic-circle ic-sm is-warning"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+        </div>
+        <div class="stat-lbl">Métrica C</div>
+        <p class="stat-sub">Variantes do ícone: is-success / is-warning / is-danger / is-neutral.</p>
+      </div>
+    </div>
+
+    <h3 class="doc-h3">Feature cards</h3>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <span class="ic-circle"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+        <h5>Recurso um</h5>
+        <p>Card com ícone, título, descrição e uma tag opcional ao final.</p>
+        <span class="feat-tag">Tag</span>
+      </div>
+      <div class="feat-card">
+        <span class="ic-circle is-success"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+        <h5>Recurso dois</h5>
+        <p>Use grids de feature cards para listar capacidades ou casos de uso.</p>
+        <span class="feat-tag">Tag</span>
+      </div>
+    </div>
+
+    <h3 class="doc-h3">Lista com ícones (ic-list)</h3>
+    <ul class="ic-list">
+      <li>
+        <span class="ic-circle ic-sm"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+        <div><b>Item com destaque</b><p>Lista enriquecida — ícone circular + título + descrição.</p></div>
+      </li>
+      <li>
+        <span class="ic-circle ic-sm is-warning"><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+        <div><b>Outro item</b><p>Boa para pontos de atenção, checklists e enumerações com contexto.</p></div>
+      </li>
+    </ul>
+
+    <!-- ============================================================
+         CODETABS — exemplo de código em 3 linguagens
+         ============================================================ -->
+    <h2 class="doc-h2" id="codetabs">Codetabs (Python / Java / C#)<a href="#codetabs" class="h-anchor">#</a></h2>
+    <p>Todo exemplo de código no padrão {{PROJETO}} vai nas três linguagens, em abas, com botão de copiar.</p>
+
+    <div class="codetabs">
+      <div class="codetabs-bar">
+        <button class="codetab active" type="button">Python</button>
+        <button class="codetab" type="button">Java</button>
+        <button class="codetab" type="button">C#</button>
+        <button class="codetabs-copy" type="button">Copiar</button>
+      </div>
+      <div class="codetabs-body">
+        <div class="codetabs-panel active"><pre><code><span class="tok-k">def</span> <span class="tok-fn">saudacao</span>(nome):
+    <span class="tok-k">return</span> <span class="tok-s">f"olá, {nome}"</span></code></pre></div>
+        <div class="codetabs-panel"><pre><code><span class="tok-n">String</span> <span class="tok-fn">saudacao</span>(<span class="tok-n">String</span> nome) {
+    <span class="tok-k">return</span> <span class="tok-s">"olá, "</span> + nome;
+}</code></pre></div>
+        <div class="codetabs-panel"><pre><code><span class="tok-n">string</span> <span class="tok-fn">Saudacao</span>(<span class="tok-n">string</span> nome) =&gt; $<span class="tok-s">"olá, {nome}"</span>;</code></pre></div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         CHARTS
+         ============================================================ -->
+    <hr/>
+    <span class="doc-eyebrow">Galeria · CSS puro · Light + Dark</span>
+    <h2 class="doc-h2" id="charts" style="margin-top:0">Gráficos<a href="#charts" class="h-anchor">#</a></h2>
+
+    <h3 class="doc-h3" id="chart-h">1. Barras horizontais<a href="#chart-h" class="h-anchor">#</a></h3>
+    <div class="chart">
+      <h5>Top 6 modelos mais alugados — abril/2026</h5>
+      <p class="chart-sub">Total: 18.420 contratos</p>
+      <div class="bar-h">
+        <div class="row"><span class="lbl">Yaris Cross</span><div class="track"><div class="fill" style="--p:92%" data-tip="4.812"></div></div><span class="val">4.812</span></div>
+        <div class="row"><span class="lbl">Corolla</span>    <div class="track"><div class="fill" style="--p:78%" data-tip="4.075"></div></div><span class="val">4.075</span></div>
+        <div class="row"><span class="lbl">RAV4 Hybrid</span><div class="track"><div class="fill" style="--p:64%" data-tip="3.340"></div></div><span class="val">3.340</span></div>
+        <div class="row"><span class="lbl">Corolla Cross</span><div class="track"><div class="fill" style="--p:51%" data-tip="2.668"></div></div><span class="val">2.668</span></div>
+        <div class="row"><span class="lbl">Hilux SR</span>   <div class="track"><div class="fill" style="--p:38%" data-tip="1.985"></div></div><span class="val">1.985</span></div>
+        <div class="row"><span class="lbl">SW4</span>        <div class="track"><div class="fill" style="--p:29%" data-tip="1.540"></div></div><span class="val">1.540</span></div>
+      </div>
+    </div>
+
+    <h3 class="doc-h3" id="chart-v">2. Barras verticais<a href="#chart-v" class="h-anchor">#</a></h3>
+    <div class="chart">
+      <h5>Contratos novos por mês — 2026</h5>
+      <p class="chart-sub">Em milhares</p>
+      <div class="bar-v" style="--cols:12">
+        <div></div>
+        <div>
+          <div class="plot">
+            <div class="col"><div class="bar" style="--h:42%" data-val="6.2k"></div></div>
+            <div class="col"><div class="bar" style="--h:55%" data-val="8.1k"></div></div>
+            <div class="col"><div class="bar" style="--h:48%" data-val="7.0k"></div></div>
+            <div class="col"><div class="bar" style="--h:62%" data-val="9.2k"></div></div>
+            <div class="col"><div class="bar" style="--h:78%" data-val="11.4k"></div></div>
+            <div class="col"><div class="bar" style="--h:71%" data-val="10.5k"></div></div>
+            <div class="col"><div class="bar" style="--h:88%" data-val="12.8k"></div></div>
+            <div class="col"><div class="bar" style="--h:92%" data-val="13.5k"></div></div>
+            <div class="col"><div class="bar" style="--h:81%" data-val="11.9k"></div></div>
+            <div class="col"><div class="bar" style="--h:74%" data-val="10.8k"></div></div>
+            <div class="col"><div class="bar" style="--h:68%" data-val="10.0k"></div></div>
+            <div class="col"><div class="bar" style="--h:58%" data-val="8.5k"></div></div>
+          </div>
+          <div class="x-labels">
+            <span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span>
+            <span>Mai</span><span>Jun</span><span>Jul</span><span>Ago</span>
+            <span>Set</span><span>Out</span><span>Nov</span><span>Dez</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="doc-h3" id="chart-grouped">3. Barras agrupadas<a href="#chart-grouped" class="h-anchor">#</a></h3>
+    <div class="chart">
+      <h5>Contratos por segmento — Q1/Q2 2026</h5>
+      <p class="chart-sub">PF (primário) vs PJ (neutro)</p>
+      <div class="bar-v" style="--cols:6">
+        <div></div>
+        <div>
+          <div class="plot">
+            <div class="col group"><div class="bar" style="--h:62%;--c:var(--kinto-primary)" data-val="PF 4.2k"></div><div class="bar" style="--h:38%;--c:var(--neutral)" data-val="PJ 2.6k"></div></div>
+            <div class="col group"><div class="bar" style="--h:68%;--c:var(--kinto-primary)" data-val="PF 4.6k"></div><div class="bar" style="--h:42%;--c:var(--neutral)" data-val="PJ 2.9k"></div></div>
+            <div class="col group"><div class="bar" style="--h:74%;--c:var(--kinto-primary)" data-val="PF 5.0k"></div><div class="bar" style="--h:48%;--c:var(--neutral)" data-val="PJ 3.3k"></div></div>
+            <div class="col group"><div class="bar" style="--h:78%;--c:var(--kinto-primary)" data-val="PF 5.3k"></div><div class="bar" style="--h:56%;--c:var(--neutral)" data-val="PJ 3.8k"></div></div>
+            <div class="col group"><div class="bar" style="--h:88%;--c:var(--kinto-primary)" data-val="PF 6.0k"></div><div class="bar" style="--h:62%;--c:var(--neutral)" data-val="PJ 4.2k"></div></div>
+            <div class="col group"><div class="bar" style="--h:82%;--c:var(--kinto-primary)" data-val="PF 5.6k"></div><div class="bar" style="--h:71%;--c:var(--neutral)" data-val="PJ 4.8k"></div></div>
+          </div>
+          <div class="x-labels"><span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="--c:var(--kinto-primary)"></i> Pessoa Física</span>
+        <span><i style="--c:var(--neutral)"></i> Pessoa Jurídica</span>
+      </div>
+    </div>
+
+    <h3 class="doc-h3" id="chart-stacked">4. Barras empilhadas<a href="#chart-stacked" class="h-anchor">#</a></h3>
+    <div class="chart">
+      <h5>Mix de produto por mês — Q2/2026</h5>
+      <p class="chart-sub">Share / Personal / Fleet</p>
+      <div class="bar-v" style="--cols:6">
+        <div></div>
+        <div>
+          <div class="plot">
+            <div class="col stack"><div class="bar"><div class="seg" style="--h:28%;--c:#005A72"></div><div class="seg" style="--h:42%;--c:#00708D"></div><div class="seg" style="--h:18%;--c:#4AB5D0"></div></div></div>
+            <div class="col stack"><div class="bar"><div class="seg" style="--h:32%;--c:#005A72"></div><div class="seg" style="--h:38%;--c:#00708D"></div><div class="seg" style="--h:24%;--c:#4AB5D0"></div></div></div>
+            <div class="col stack"><div class="bar"><div class="seg" style="--h:34%;--c:#005A72"></div><div class="seg" style="--h:44%;--c:#00708D"></div><div class="seg" style="--h:18%;--c:#4AB5D0"></div></div></div>
+            <div class="col stack"><div class="bar"><div class="seg" style="--h:36%;--c:#005A72"></div><div class="seg" style="--h:40%;--c:#00708D"></div><div class="seg" style="--h:22%;--c:#4AB5D0"></div></div></div>
+            <div class="col stack"><div class="bar"><div class="seg" style="--h:42%;--c:#005A72"></div><div class="seg" style="--h:36%;--c:#00708D"></div><div class="seg" style="--h:20%;--c:#4AB5D0"></div></div></div>
+            <div class="col stack"><div class="bar"><div class="seg" style="--h:40%;--c:#005A72"></div><div class="seg" style="--h:38%;--c:#00708D"></div><div class="seg" style="--h:20%;--c:#4AB5D0"></div></div></div>
+          </div>
+          <div class="x-labels"><span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="--c:#005A72"></i> {{PROJETO}} Share</span>
+        <span><i style="--c:#00708D"></i> One Personal</span>
+        <span><i style="--c:#4AB5D0"></i> One Fleet</span>
+      </div>
+    </div>
+
+    <h3 class="doc-h3" id="chart-progress">5. Progress / KPI<a href="#chart-progress" class="h-anchor">#</a></h3>
+    <div class="chart">
+      <h5>Metas Q2/2026 — % atingido</h5>
+      <p class="chart-sub">Atualizado em 27/05</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--gap-lg);margin-top:8px">
+        <div>
+          <div class="cluster" style="justify-content:space-between"><span>Contratos novos</span><b>83%</b></div>
+          <div class="progress"><i style="--p:83%"></i></div>
+          <small style="color:var(--meta)">42.180 de 51.000</small>
+        </div>
+        <div>
+          <div class="cluster" style="justify-content:space-between"><span>NPS</span><b>71%</b></div>
+          <div class="progress"><i style="--p:71%;--c:var(--success)"></i></div>
+          <small style="color:var(--meta)">Meta atingida ✓</small>
+        </div>
+        <div>
+          <div class="cluster" style="justify-content:space-between"><span>Frota verde</span><b>54%</b></div>
+          <div class="progress"><i style="--p:54%;--c:var(--warning)"></i></div>
+          <small style="color:var(--meta)">3.240 de 6.000 híbridos</small>
+        </div>
+        <div>
+          <div class="cluster" style="justify-content:space-between"><span>Churn</span><b>38%</b></div>
+          <div class="progress"><i style="--p:38%;--c:var(--danger)"></i></div>
+          <small style="color:var(--meta)">Acima da meta (alerta)</small>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="doc-h3" id="chart-donut">6. Donut &amp; Gauge<a href="#chart-donut" class="h-anchor">#</a></h3>
+    <div class="chart">
+      <h5>Distribuição da frota ativa</h5>
+      <div class="donut-row">
+        <div class="donut" style="--p:65"><b>65%<small>SUVs</small></b></div>
+        <div class="donut" style="--p:23;--c:#3DA0B5"><b>23%<small>Sedans</small></b></div>
+        <div class="donut" style="--p:12;--c:#7AC1D6"><b>12%<small>Picapes</small></b></div>
+        <div class="gauge" style="--p:72"><div class="ring"></div><b>72%<small>Disponibilidade</small></b></div>
+      </div>
+    </div>
+
+    <h3 class="doc-h3" id="chart-heat">7. Heatmap<a href="#chart-heat" class="h-anchor">#</a></h3>
+    <div class="chart">
+      <h5>Retiradas por hora × dia da semana</h5>
+      <p class="chart-sub">Maio/2026 · {{PROJETO}} Share</p>
+      <div class="heatmap">
+        <div class="head"></div>
+        <div class="head">08</div><div class="head">09</div><div class="head">10</div><div class="head">11</div>
+        <div class="head">12</div><div class="head">13</div><div class="head">14</div><div class="head">15</div>
+        <div class="head">16</div><div class="head">17</div><div class="head">18</div><div class="head">19</div>
+
+        <div class="lbl">Seg</div>
+        <div class="cell" style="--i:.15" data-val="12"></div><div class="cell" style="--i:.32" data-val="28"></div>
+        <div class="cell" style="--i:.55" data-val="48"></div><div class="cell" style="--i:.70" data-val="61"></div>
+        <div class="cell" style="--i:.62" data-val="54"></div><div class="cell" style="--i:.45" data-val="39"></div>
+        <div class="cell" style="--i:.68" data-val="59"></div><div class="cell" style="--i:.82" data-val="71"></div>
+        <div class="cell" style="--i:.95" data-val="83"></div><div class="cell" style="--i:.88" data-val="77"></div>
+        <div class="cell" style="--i:.72" data-val="63"></div><div class="cell" style="--i:.42" data-val="37"></div>
+
+        <div class="lbl">Ter</div>
+        <div class="cell" style="--i:.18" data-val="16"></div><div class="cell" style="--i:.38" data-val="33"></div>
+        <div class="cell" style="--i:.60" data-val="52"></div><div class="cell" style="--i:.75" data-val="65"></div>
+        <div class="cell" style="--i:.58" data-val="50"></div><div class="cell" style="--i:.42" data-val="37"></div>
+        <div class="cell" style="--i:.72" data-val="63"></div><div class="cell" style="--i:.85" data-val="74"></div>
+        <div class="cell" style="--i:.92" data-val="80"></div><div class="cell" style="--i:.85" data-val="74"></div>
+        <div class="cell" style="--i:.70" data-val="61"></div><div class="cell" style="--i:.40" data-val="35"></div>
+
+        <div class="lbl">Qua</div>
+        <div class="cell" style="--i:.20" data-val="17"></div><div class="cell" style="--i:.40" data-val="35"></div>
+        <div class="cell" style="--i:.62" data-val="54"></div><div class="cell" style="--i:.78" data-val="68"></div>
+        <div class="cell" style="--i:.55" data-val="48"></div><div class="cell" style="--i:.40" data-val="35"></div>
+        <div class="cell" style="--i:.74" data-val="64"></div><div class="cell" style="--i:.88" data-val="77"></div>
+        <div class="cell" style="--i:.94" data-val="82"></div><div class="cell" style="--i:.86" data-val="75"></div>
+        <div class="cell" style="--i:.68" data-val="59"></div><div class="cell" style="--i:.38" data-val="33"></div>
+
+        <div class="lbl">Qui</div>
+        <div class="cell" style="--i:.22" data-val="19"></div><div class="cell" style="--i:.45" data-val="39"></div>
+        <div class="cell" style="--i:.68" data-val="59"></div><div class="cell" style="--i:.82" data-val="71"></div>
+        <div class="cell" style="--i:.60" data-val="52"></div><div class="cell" style="--i:.45" data-val="39"></div>
+        <div class="cell" style="--i:.78" data-val="68"></div><div class="cell" style="--i:.92" data-val="80"></div>
+        <div class="cell" style="--i:.98" data-val="85"></div><div class="cell" style="--i:.90" data-val="78"></div>
+        <div class="cell" style="--i:.75" data-val="65"></div><div class="cell" style="--i:.48" data-val="42"></div>
+
+        <div class="lbl">Sex</div>
+        <div class="cell" style="--i:.28" data-val="24"></div><div class="cell" style="--i:.52" data-val="45"></div>
+        <div class="cell" style="--i:.75" data-val="65"></div><div class="cell" style="--i:.90" data-val="78"></div>
+        <div class="cell" style="--i:.72" data-val="63"></div><div class="cell" style="--i:.58" data-val="50"></div>
+        <div class="cell" style="--i:.86" data-val="75"></div><div class="cell" style="--i:.99" data-val="86"></div>
+        <div class="cell" style="--i:1" data-val="87"></div><div class="cell" style="--i:.96" data-val="84"></div>
+        <div class="cell" style="--i:.84" data-val="73"></div><div class="cell" style="--i:.62" data-val="54"></div>
+
+        <div class="lbl">Sáb</div>
+        <div class="cell" style="--i:.35" data-val="30"></div><div class="cell" style="--i:.58" data-val="50"></div>
+        <div class="cell" style="--i:.72" data-val="63"></div><div class="cell" style="--i:.85" data-val="74"></div>
+        <div class="cell" style="--i:.88" data-val="77"></div><div class="cell" style="--i:.78" data-val="68"></div>
+        <div class="cell" style="--i:.70" data-val="61"></div><div class="cell" style="--i:.62" data-val="54"></div>
+        <div class="cell" style="--i:.55" data-val="48"></div><div class="cell" style="--i:.45" data-val="39"></div>
+        <div class="cell" style="--i:.30" data-val="26"></div><div class="cell" style="--i:.18" data-val="16"></div>
+
+        <div class="lbl">Dom</div>
+        <div class="cell" style="--i:.15" data-val="12"></div><div class="cell" style="--i:.28" data-val="24"></div>
+        <div class="cell" style="--i:.42" data-val="37"></div><div class="cell" style="--i:.55" data-val="48"></div>
+        <div class="cell" style="--i:.62" data-val="54"></div><div class="cell" style="--i:.52" data-val="45"></div>
+        <div class="cell" style="--i:.45" data-val="39"></div><div class="cell" style="--i:.38" data-val="33"></div>
+        <div class="cell" style="--i:.32" data-val="28"></div><div class="cell" style="--i:.25" data-val="22"></div>
+        <div class="cell" style="--i:.18" data-val="16"></div><div class="cell" style="--i:.10" data-val="8"></div>
+      </div>
+      <div class="legend" style="margin-top:14px">
+        <span>Menos</span>
+        <i style="background:rgba(var(--kinto-primary-rgb),.15)"></i>
+        <i style="background:rgba(var(--kinto-primary-rgb),.4)"></i>
+        <i style="background:rgba(var(--kinto-primary-rgb),.65)"></i>
+        <i style="background:rgba(var(--kinto-primary-rgb),.9)"></i>
+        <span>Mais</span>
+      </div>
+    </div>
+
+    <hr/>
+    <div class="callout callout--neutral">
+      <span class="ico">›</span>
+      <div>
+        <b>Resumo</b>
+        <p>Esta variação muda <strong>apenas</strong> radius + paleta dark. Os componentes, layout e estrutura HTML são idênticos ao Docs DS flat &mdash; troca o stylesheet e tudo se adapta.</p>
+      </div>
+    </div>
+
+  <footer class="ds-footer">
+  <div class="ftr-signature">
+    <div class="sig-label">
+      <small>Documento elaborado por</small>
+      <span class="seal">v1.1 · 28/05/2026</span>
+    </div>
+    <div class="sig-author">
+      <div class="avatar">FR</div>
+      <div class="sig-info">
+        <b>Fabio A. B. Rodrigues</b>
+        <span>Arquiteto de Soluções e Dados · {{PROJETO}} Brasil</span>
+      </div>
+    </div>
+    <div class="sig-contact">
+      <a href="mailto:v-frodrigues@kintomobility.com.br">v-frodrigues@kintomobility.com.br</a>
+      <span>kintomobility.com.br</span>
+    </div>
+  </div>
+  <div class="ftr-bottom">
+    <span>© 2026 {{PROJETO}} Mobilidade Brasil — Documentação técnica</span>
+    <span>Design System v1.1 · Rounded + Dark</span>
+  </div>
+</footer>
+  </main>
+
+  <!-- ============ TOC ============ -->
+  <aside class="toc">
+    <h6>Neste artigo</h6>
+    <ul>
+      <li><a href="#frontmatter" class="active">Front Matter</a></li>
+      <li><a href="#overview">Visão geral</a></li>
+      <li><a href="#tokens">Tokens light/dark</a></li>
+      <li><a href="#radius">Escala radius</a></li>
+      <li><a href="#callouts">Callouts</a></li>
+      <li><a href="#code">Código</a></li>
+      <li><a href="#tables">Tabelas</a></li>
+      <li><a href="#badges">Badges</a></li>
+      <li><a href="#steps">Steps</a></li>
+      <li><a href="#tabs">Tabs</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#related">Relacionados</a></li>
+      <li><a href="#changelog">Timeline</a></li>
+      <li><a href="#extras">Cards &amp; KPIs</a></li>
+      <li><a href="#codetabs">Codetabs</a></li>
+    </ul>
+    <h6 style="margin-top:18px">Gráficos</h6>
+    <ul>
+      <li class="lvl-3"><a href="#chart-h">1. Horizontais</a></li>
+      <li class="lvl-3"><a href="#chart-v">2. Verticais</a></li>
+      <li class="lvl-3"><a href="#chart-grouped">3. Agrupadas</a></li>
+      <li class="lvl-3"><a href="#chart-stacked">4. Empilhadas</a></li>
+      <li class="lvl-3"><a href="#chart-progress">5. Progress</a></li>
+      <li class="lvl-3"><a href="#chart-donut">6. Donut &amp; Gauge</a></li>
+      <li class="lvl-3"><a href="#chart-heat">7. Heatmap</a></li>
+    </ul>
+  </aside>
+</div>
+
+
+
+<div class="toast" id="toast">Copiado ✓</div>
+
+<script src="assets/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,1048 @@
+/* =============================================================
+   DOCS DESIGN SYSTEM · ROUNDED + DARK
+   Variação do core com border-radius + tema light/dark via
+   [data-theme]. Tokens semÃ¢nticos â€” componentes nÃ£o conhecem o tema.
+   ============================================================= */
+
+/* â€”â€” LIGHT (default) â€”â€” */
+:root,
+:root[data-theme="light"]{
+  /* Brand */
+  --brand:        #00708D;
+  --brand-rgb:    0,112,141;
+  --brand-hover:  #005A72;
+  --brand-tint:   #EBF4F6;
+
+  /* Surface */
+  --bg:                   #F7F9FA;
+  --surface:              #FFFFFF;
+  --surface-2:            #FBFCFD;
+  --surface-3:            #F0F3F5;
+  --surface-inv:          #1A2026;       /* code blocks: sempre dark */
+
+  /* Border */
+  --border:               #E5E7EA;
+  --border-strong:        #C8D0D5;
+
+  /* Text */
+  --text:                 #2A333A;
+  --text-2:               #38434B;
+  --meta:                 #7A8893;
+  --on-primary:           #FFFFFF;
+
+  /* Semantic â€” backgrounds e fg para callouts/badges */
+  --info:                 #00708D;
+  --info-bg:              #EBF4F6;
+  --info-fg:              #00708D;
+  --success:              #2F8F5F;
+  --success-bg:           #E8F3EC;
+  --success-fg:           #1E6F45;
+  --warning:              #B5740F;
+  --warning-bg:           #FBF1DB;
+  --warning-fg:           #8C5A0B;
+  --danger:               #B6322D;
+  --danger-bg:            #FBE9E8;
+  --danger-fg:            #8E2622;
+  --neutral:              #59646D;
+  --neutral-bg:           #EEF1F3;
+  --neutral-fg:           #4A555E;
+
+  /* Code (sempre dark surface) */
+  --code-bg:              #0F1419;
+  --code-bg-2:            #1A2026;
+  --code-fg:              #E6EAEC;
+  --code-muted:           #9CA8B0;
+
+  /* Shadow */
+  --shadow-1:             0 1px 2px rgba(20,30,40,.06), 0 1px 1px rgba(20,30,40,.04);
+  --shadow-2:             0 4px 14px rgba(20,30,40,.08), 0 1px 3px rgba(20,30,40,.05);
+  --shadow-pop:           0 8px 28px rgba(0,112,141,.18);
+
+  --grid-line:            #E5E7EA;
+}
+
+/* â€”â€” DARK â€”â€” */
+:root[data-theme="dark"]{
+  /* Brand â€” azul mais luminoso pra contrastar em surface escuro */
+  --brand:        #4AB5D0;
+  --brand-rgb:    74,181,208;
+  --brand-hover:  #6BC9DE;
+  --brand-tint:   #1A3A44;
+
+  /* Surface */
+  --bg:                   #0E1418;
+  --surface:              #1A2026;
+  --surface-2:            #232B33;
+  --surface-3:            #2D3942;
+  --surface-inv:          #0A0E11;
+
+  /* Border */
+  --border:               #2D3942;
+  --border-strong:        #3D4A55;
+
+  /* Text */
+  --text:                 #E6EAEC;
+  --text-2:               #C8D2D7;
+  --meta:                 #9CA8B0;
+  --on-primary:           #0E1418;
+
+  /* Semantic */
+  --info:                 #4AB5D0;
+  --info-bg:              #1A3A44;
+  --info-fg:              #7AC9DE;
+  --success:              #5BC07F;
+  --success-bg:           #1F3328;
+  --success-fg:           #8ADBA4;
+  --warning:              #D89B43;
+  --warning-bg:           #3B2D17;
+  --warning-fg:           #F0B870;
+  --danger:               #E07570;
+  --danger-bg:            #3B1F1E;
+  --danger-fg:            #F0A09C;
+  --neutral:              #8A95A0;
+  --neutral-bg:           #232B33;
+  --neutral-fg:           #B8C2CC;
+
+  --code-bg:              #0A0E11;
+  --code-bg-2:            #141A20;
+  --code-fg:              #E6EAEC;
+  --code-muted:           #8A95A0;
+
+  --shadow-1:             0 1px 2px rgba(0,0,0,.4), 0 1px 1px rgba(0,0,0,.3);
+  --shadow-2:             0 4px 14px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.3);
+  --shadow-pop:           0 8px 28px rgba(74,181,208,.25);
+
+  --grid-line:            #2D3942;
+}
+
+/* â€”â€” TIPOGRAFIA E ESCALA SHARED â€”â€” */
+:root{
+  --font:                 "Inter","ToyotaType","Arial",sans-serif;
+  --font-mono:            "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+
+  --fs-body:              16px;
+  --lh-body:              1.65;
+  --measure:              none;
+
+  --gap-xs:               4px;
+  --gap-sm:               8px;
+  --gap:                  16px;
+  --gap-lg:               24px;
+  --gap-xl:               40px;
+  --gap-2xl:              64px;
+
+  /* â¬‡ NOVA escala de RADIUS â€” este Ã© o diferencial visual */
+  --r-xs:                 3px;       /* code inline, dot */
+  --r-sm:                 5px;       /* badges, kbd */
+  --r:                    8px;       /* botões, inputs, callouts internos */
+  --r-md:                 10px;      /* code blocks, callouts, cards menores */
+  --r-lg:                 14px;      /* containers de chart, cards grandes */
+  --r-xl:                 20px;      /* hero cards, banners */
+  --r-pill:               999px;     /* pills, dots, ícones circulares */
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font);
+  font-size:var(--fs-body);
+  line-height:var(--lh-body);
+  color:var(--text);
+  background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+  transition:background .25s ease, color .25s ease;
+}
+
+/* =====================================================================
+   SCROLLBAR â€” fina, transparente, segue cores do tema
+   ===================================================================== */
+*{
+  scrollbar-width:thin;                                   /* Firefox */
+  scrollbar-color:var(--border-strong) transparent;
+}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{
+  background:var(--border-strong);
+  border-radius:var(--r-pill);
+  border:2px solid var(--bg);                             /* "halo" que afina o thumb */
+}
+*::-webkit-scrollbar-thumb:hover{background:var(--meta)}
+*::-webkit-scrollbar-corner{background:transparent}
+
+/* Sidebar/TOC: thumb mais sutil contra surface branca */
+.side::-webkit-scrollbar-thumb,
+.toc::-webkit-scrollbar-thumb{border-color:var(--surface)}
+
+/* Code blocks (sempre dark): thumb claro */
+pre::-webkit-scrollbar-thumb,
+.code-block::-webkit-scrollbar-thumb,
+.terminal::-webkit-scrollbar-thumb,
+.diff::-webkit-scrollbar-thumb{
+  background:#3D4A55;border-color:var(--code-bg);
+}
+pre,.code-block,.terminal,.diff{scrollbar-color:#3D4A55 transparent}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+hr{border:0;border-top:1px solid var(--border);margin:var(--gap-xl) 0}
+
+/* =====================================================================
+   SHELL
+   ===================================================================== */
+/* A página não rola; cada coluna rola por conta própria. Assim as sidebars
+   e o TOC ficam SEMPRE visíveis e só a coluna central (com o footer dentro)
+   rola. Evita o "deslize pra cima" dos menos no fim da página. */
+html,body{height:100%}
+body{overflow:hidden}
+/* A rolagem é do SHELL, não de cada coluna. Quando cada uma rolava sozinha,
+   nada dentro da coluna central podia atravessar a página — o rodapé ficava
+   preso à largura do texto, ou cortado ao tentar sair. Sidebar e TOC ficam
+   `sticky`, então continuam à vista enquanto o conteúdo passa. */
+.shell{--side-w:260px;--toc-w:240px;display:grid;grid-template-columns:var(--side-w) minmax(0,1fr) var(--toc-w);align-items:start;height:calc(100vh - 64px);overflow-y:auto;overflow-x:hidden}
+.side{
+  background:var(--surface);border-right:1px solid var(--border);
+  padding:var(--gap-lg);
+  position:sticky;top:0;max-height:calc(100vh - 64px);overflow:auto;
+  transition:background .25s ease, border-color .25s ease;
+}
+.toc{
+  padding:var(--gap-lg) var(--gap);border-left:1px solid var(--border);
+  position:sticky;top:0;max-height:calc(100vh - 64px);overflow:auto;
+  transition:border-color .25s ease;
+}
+
+/* â€”â€” Header sticky padrÃ£o â€”â€” */
+.hdr{position:sticky;top:0;z-index:50;height:64px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:var(--gap-lg);padding:0 var(--gap-lg);background:rgba(255,255,255,.85);backdrop-filter:saturate(160%) blur(12px);-webkit-backdrop-filter:saturate(160%) blur(12px);border-bottom:1px solid var(--border);transition:background .25s ease}
+:root[data-theme="dark"] .hdr{background:rgba(26,32,38,.85)}
+.hdr-brand{display:flex;align-items:center;gap:14px}
+.hdr-brand .logo{font-weight:700;letter-spacing:-.02em;font-size:22px;line-height:1;color:var(--brand)}
+.hdr-brand .div{width:1px;height:24px;background:var(--border)}
+.hdr-brand .doc-meta{display:flex;flex-direction:column;line-height:1.2}
+.hdr-brand .doc-meta b{font-size:14px;color:var(--text);font-weight:600}
+.hdr-brand .doc-meta small{font-size:11.5px;color:var(--meta);text-transform:uppercase;letter-spacing:.08em}
+.hdr-center{display:flex;justify-content:center;gap:8px}
+.hdr-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--info-bg);color:var(--info-fg);border-radius:var(--r-pill);font-size:12.5px;font-weight:600;border:1px solid var(--border);font-family:var(--font-mono)}
+.hdr-actions{display:flex;gap:8px;align-items:center}
+.hdr .btn-hdr{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font);font-size:13px;font-weight:600;padding:8px 14px;border-radius:var(--r);cursor:pointer;border:1px solid transparent;transition:all .15s;text-decoration:none}
+.hdr .btn-hdr svg{width:14px;height:14px}
+.hdr .btn-hdr.primary{background:var(--brand);color:var(--on-primary)}
+.hdr .btn-hdr.primary:hover{background:var(--brand-hover)}
+.hdr .btn-hdr.outline{background:transparent;color:var(--text);border-color:var(--border-strong)}
+.hdr .btn-hdr.outline:hover{border-color:var(--brand);color:var(--brand)}
+.content{min-height:calc(100vh - 64px);padding:var(--gap-xl) var(--gap-2xl) 0}
+/* Footer mora dentro da coluna central (rola junto) e sangra até as bordas dela */
+/* O rodapé atravessa a página inteira, e não só a coluna de leitura: ele é o
+   fecho do documento, não mais um bloco do texto. Continua DENTRO do <main>
+   (rola junto com o conteúdo) e sangra por cima da sidebar e do TOC com margem
+   negativa — daí o `overflow-x:clip` na coluna, que corta o transbordo sem
+   transformá-lo em barra de rolagem horizontal. */
+.content > .ds-footer{
+  position:relative;z-index:2;
+  margin:var(--gap-2xl) calc(-1 * var(--toc-w) - var(--gap-2xl)) 0 calc(-1 * var(--side-w) - var(--gap-2xl));
+}
+@media(max-width:1200px){.shell{--side-w:240px;--toc-w:0px;grid-template-columns:var(--side-w) 1fr}.toc{display:none}}
+@media(max-width:820px){
+  body{overflow:auto}
+  /* `minmax(0,1fr)`, e não `1fr`: um item de grid tem `min-width:auto`, então a
+     faixa cresce até o conteúdo mais largo — uma tabela esticava a coluna a
+     452px numa janela de 430 e a página inteira rolava para o lado. */
+  .shell{grid-template-columns:minmax(0,1fr);height:auto;overflow:visible;--side-w:0px;--toc-w:0px}
+  .content{min-width:0}
+  .side,.content,.toc{height:auto;max-height:none;position:static;overflow:visible}
+  .content{padding:var(--gap-lg)}
+  .content > .ds-footer{margin-left:calc(-1 * var(--gap-lg));margin-right:calc(-1 * var(--gap-lg))}
+  /* Num celular o header não cabe: logo + versão + tema somavam 519px numa
+     janela de 430 e empurravam a página inteira para o lado. A tag de versão
+     sai (ela está no Front Matter e no rodapé), e o que fica se aperta. */
+  .hdr{grid-template-columns:minmax(0,1fr) auto;gap:var(--gap);padding:0 var(--gap)}
+  .hdr-center{display:none}
+  /* `min-width:0` nos dois: sem isso o flex se recusa a encolher abaixo do
+     conteúdo e o título empurra a página, mesmo com ellipsis pedido. */
+  .hdr-brand{min-width:0;overflow:hidden}
+  .doc-meta{min-width:0}
+  .doc-meta b,.doc-meta small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+}
+
+/* Header da sidebar */
+.brand-mini{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-bottom:var(--gap-lg);padding-bottom:var(--gap);
+  border-bottom:1px solid var(--border);
+}
+.brand-mini b{font-weight:700;letter-spacing:-.02em;color:var(--brand);font-size:20px;line-height:1}
+.brand-mini small{display:block;color:var(--meta);font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-top:4px}
+
+/* Theme toggle */
+.theme-toggle{
+  display:inline-grid;grid-template-columns:1fr 1fr;
+  background:var(--surface-3);border:1px solid var(--border);
+  border-radius:var(--r-pill);padding:3px;cursor:pointer;
+  font-family:var(--font);
+}
+.theme-toggle button{
+  background:transparent;border:0;cursor:pointer;
+  padding:5px 10px;border-radius:var(--r-pill);
+  color:var(--meta);font-size:13px;display:inline-flex;align-items:center;gap:4px;
+  transition:all .2s ease;
+}
+:root[data-theme="light"] .theme-toggle button[data-set="light"],
+:root[data-theme="dark"]  .theme-toggle button[data-set="dark"]{
+  background:var(--surface);color:var(--brand);box-shadow:var(--shadow-1);font-weight:600;
+}
+.theme-toggle button svg{width:14px;height:14px}
+
+/* Sidebar nav */
+.side h6{font-size:11px;color:var(--meta);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin:18px 0 6px}
+.side ul{list-style:none;margin:0;padding:0}
+.side li a{display:block;padding:7px 12px;font-size:13.5px;color:var(--text);border-radius:var(--r);transition:all .15s ease}
+.side li a:hover{background:var(--info-bg);color:var(--brand);text-decoration:none}
+.side li a.active{background:var(--info-bg);color:var(--brand);font-weight:600}
+
+/* TOC direita */
+.toc h6{font-size:11px;color:var(--meta);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin:0 0 var(--gap-sm)}
+.toc ul{list-style:none;margin:0;padding:0}
+.toc li{font-size:12.5px;line-height:1.4}
+.toc li a{display:block;padding:5px 10px;color:var(--meta);border-radius:var(--r);border-left:2px solid transparent}
+.toc li a:hover{color:var(--brand);text-decoration:none;background:var(--info-bg)}
+.toc li a.active{color:var(--brand);background:var(--info-bg);font-weight:600}
+.toc li.lvl-3{padding-left:12px}
+
+/* =====================================================================
+   TYPOGRAPHY
+   ===================================================================== */
+.doc-h1{font-size:34px;line-height:1.2;font-weight:700;color:var(--text);margin:0 0 var(--gap-sm)}
+.doc-h2{font-size:24px;line-height:1.3;font-weight:700;color:var(--text);margin:var(--gap-2xl) 0 var(--gap);scroll-margin-top:var(--gap)}
+.doc-h2:first-child{margin-top:0}
+.doc-h3{font-size:18px;line-height:1.4;font-weight:600;color:var(--text);margin:var(--gap-xl) 0 var(--gap-sm);scroll-margin-top:var(--gap)}
+.doc-h4{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--brand);font-weight:600;margin:var(--gap-lg) 0 var(--gap-sm)}
+.doc-eyebrow{display:inline-block;color:var(--brand);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:var(--gap-sm)}
+.doc-lead{font-size:18px;line-height:1.55;color:var(--meta);max-width:var(--measure);margin:0 0 var(--gap-lg)}
+.doc p,.doc ul,.doc ol{max-width:var(--measure);margin:0 0 var(--gap)}
+.doc ul,.doc ol{padding-left:24px}
+.doc li{margin-bottom:6px}
+.doc blockquote{
+  margin:var(--gap-lg) 0;padding:var(--gap) var(--gap-lg);
+  border-left:3px solid var(--brand);background:var(--info-bg);color:var(--text);
+  font-style:italic;max-width:var(--measure);
+  border-radius:0 var(--r-md) var(--r-md) 0;          /* â†— rounded right */
+}
+.doc blockquote cite{display:block;margin-top:8px;font-style:normal;font-size:13px;color:var(--meta)}
+
+.h-anchor{margin-left:8px;opacity:0;color:var(--brand);font-weight:400;transition:opacity .15s}
+.doc-h2:hover .h-anchor,.doc-h3:hover .h-anchor{opacity:1}
+
+/* Meta-bar */
+.doc-meta-bar{
+  display:flex;flex-wrap:wrap;gap:var(--gap-lg);align-items:center;
+  padding:var(--gap);background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r-md);
+  margin-bottom:var(--gap-xl);font-size:13px;color:var(--meta);
+}
+.doc-meta-bar .author{display:flex;align-items:center;gap:8px}
+.doc-meta-bar .avatar{
+  width:32px;height:32px;border-radius:var(--r-pill);
+  background:var(--brand);color:var(--on-primary);
+  display:grid;place-items:center;font-weight:700;font-size:12px;
+}
+.doc-meta-bar b{color:var(--text);font-weight:600}
+
+/* Breadcrumbs */
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--meta);margin-bottom:var(--gap)}
+.crumbs a{color:var(--meta)}
+.crumbs a:hover{color:var(--brand)}
+.crumbs span.sep{color:var(--border-strong)}
+.crumbs span.now{color:var(--text);font-weight:600}
+
+/* =====================================================================
+   CODE
+   ===================================================================== */
+code{
+  font-family:var(--font-mono);font-size:.9em;
+  background:var(--info-bg);color:var(--brand-hover);
+  padding:2px 7px;border-radius:var(--r-xs);border:1px solid var(--border);
+}
+:root[data-theme="dark"] code{color:var(--info-fg)}
+
+pre{margin:var(--gap-lg) 0;padding:0;background:var(--code-bg);color:var(--code-fg);border-radius:var(--r-md);overflow:hidden;font-family:var(--font-mono);font-size:13px;line-height:1.6}
+pre code{display:block;padding:18px 20px;background:transparent;color:inherit;border:0;border-radius:0;font-size:inherit}
+
+.code-block{margin:var(--gap-lg) 0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-1)}
+.code-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px var(--gap);background:var(--code-bg-2);color:var(--code-muted);
+  font-family:var(--font-mono);font-size:12px;border-bottom:1px solid var(--surface-inv);
+}
+.code-head .file{display:flex;align-items:center;gap:8px;color:#C8D2D7}
+.code-head .file::before{content:"";width:8px;height:8px;border-radius:var(--r-pill);background:#7AC1D6}
+.code-head .lang{text-transform:uppercase;letter-spacing:.1em;color:#7AC1D6;font-weight:600;font-size:11px}
+.code-head .copy{
+  background:transparent;border:1px solid #2D3942;color:var(--code-muted);
+  font-family:var(--font-mono);font-size:11px;padding:5px 12px;cursor:pointer;
+  text-transform:uppercase;letter-spacing:.1em;border-radius:var(--r);
+  transition:all .15s ease;
+}
+.code-head .copy:hover{color:#fff;border-color:#4A5A66;background:rgba(255,255,255,.04)}
+.code-block pre{margin:0;border:0;border-radius:0}
+
+/* Syntax tokens */
+.tok-k{color:#FF7A93}
+.tok-s{color:#A8E0A4}
+.tok-n{color:#7AC1D6}
+.tok-c{color:#6B7E8A;font-style:italic}
+.tok-fn{color:#E8C56B}
+.tok-p{color:#C8D2D7}
+
+.terminal{
+  background:var(--code-bg);color:var(--code-fg);font-family:var(--font-mono);
+  font-size:13px;line-height:1.65;padding:18px 20px;
+  border:1px solid var(--surface-inv);border-radius:var(--r-md);
+  margin:var(--gap-lg) 0;box-shadow:var(--shadow-1);
+}
+.terminal .prompt{color:#7AC1D6}
+.terminal .prompt::after{content:"$ ";color:#A8E0A4}
+.terminal .out{color:var(--code-muted)}
+
+.diff{
+  background:var(--code-bg);color:var(--code-fg);font-family:var(--font-mono);
+  font-size:13px;line-height:1.65;padding:16px 0;
+  border:1px solid var(--surface-inv);border-radius:var(--r-md);
+  margin:var(--gap-lg) 0;overflow:hidden;box-shadow:var(--shadow-1);
+}
+.diff > div{padding:0 20px;display:grid;grid-template-columns:32px 1fr;gap:8px}
+.diff .add{background:rgba(47,143,95,.18);color:#A8E0A4}
+.diff .add::before{content:"+";color:#5BC07F;text-align:right}
+.diff .del{background:rgba(182,50,45,.18);color:#F5A8A4}
+.diff .del::before{content:"âˆ’";color:#E07570;text-align:right}
+.diff .ctx{color:var(--code-muted)}
+.diff .ctx::before{content:" "}
+
+kbd{
+  display:inline-block;font-family:var(--font-mono);font-size:11.5px;
+  padding:2px 8px;color:var(--text);line-height:1.4;min-width:18px;text-align:center;
+  background:linear-gradient(180deg, var(--surface), var(--surface-3));
+  border:1px solid var(--border-strong);border-bottom-width:2px;
+  border-radius:var(--r-sm);box-shadow:var(--shadow-1);
+}
+
+/* =====================================================================
+   CALLOUTS â€” rounded com sombra sutil
+   ===================================================================== */
+.callout{
+  display:grid;grid-template-columns:36px 1fr;gap:14px;
+  padding:var(--gap) var(--gap-lg);
+  border:1px solid var(--border);border-left:3px solid var(--info);
+  background:var(--info-bg);color:var(--text);
+  border-radius:var(--r-md);
+  margin:var(--gap-lg) 0;max-width:var(--measure);
+  box-shadow:var(--shadow-1);
+}
+.callout .ico{
+  width:28px;height:28px;display:grid;place-items:center;
+  background:var(--info);color:var(--on-primary);
+  border-radius:var(--r-pill);font-weight:700;font-size:14px;align-self:start;margin-top:2px;
+}
+.callout b{display:block;color:var(--text);margin-bottom:4px;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.06em}
+/* reset: <b>/<strong> INLINE dentro do texto do callout não herda o estilo do título (bloco/caixa-alta) */
+.callout p b,.callout p strong{display:inline;margin:0;font-size:inherit;font-weight:700;text-transform:none;letter-spacing:normal;color:inherit}
+.callout p{margin:0;color:var(--text-2);font-size:14.5px;line-height:1.55;max-width:none}
+
+.callout--info{border-left-color:var(--info);background:var(--info-bg)}
+.callout--info .ico{background:var(--info)}
+.callout--success{border-left-color:var(--success);background:var(--success-bg)}
+.callout--success .ico{background:var(--success)}
+.callout--warning{border-left-color:var(--warning);background:var(--warning-bg)}
+.callout--warning .ico{background:var(--warning)}
+.callout--danger{border-left-color:var(--danger);background:var(--danger-bg)}
+.callout--danger .ico{background:var(--danger)}
+.callout--neutral{border-left-color:var(--neutral);background:var(--neutral-bg)}
+.callout--neutral .ico{background:var(--neutral)}
+
+/* =====================================================================
+   BADGES / PILLS
+   ===================================================================== */
+.badge{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 10px;
+  font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;
+  border-radius:var(--r-sm);background:var(--neutral-bg);color:var(--neutral-fg);
+  line-height:1.5;
+}
+.badge--info{background:var(--info-bg);color:var(--info-fg)}
+.badge--success{background:var(--success-bg);color:var(--success-fg)}
+.badge--warning{background:var(--warning-bg);color:var(--warning-fg)}
+.badge--danger{background:var(--danger-bg);color:var(--danger-fg)}
+.badge--solid{background:var(--brand);color:var(--on-primary)}
+.badge--dot::before{content:"";width:6px;height:6px;border-radius:var(--r-pill);background:currentColor}
+
+.pill{
+  display:inline-flex;align-items:center;gap:5px;padding:6px 14px;
+  font-size:12.5px;font-weight:500;
+  border-radius:var(--r-pill);background:var(--surface);
+  border:1px solid var(--border-strong);color:var(--text);
+  transition:all .15s ease;
+}
+.pill:hover{border-color:var(--brand);color:var(--brand)}
+.pill--active{background:var(--brand);color:var(--on-primary);border-color:var(--brand)}
+
+/* =====================================================================
+   TABLES
+   ===================================================================== */
+.table-wrap{
+  overflow:auto;margin:var(--gap-lg) 0;
+  border:1px solid var(--border);border-radius:var(--r-md);
+  background:var(--surface);box-shadow:var(--shadow-1);
+}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t thead th{
+  background:var(--surface-3);color:var(--text);
+  text-align:left;padding:12px 16px;font-weight:600;font-size:12.5px;
+  text-transform:uppercase;letter-spacing:.06em;
+  border-bottom:1px solid var(--border);position:sticky;top:0;
+}
+table.t tbody td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text)}
+table.t tbody tr:last-child td{border-bottom:0}
+table.t tbody tr:hover{background:var(--info-bg)}
+table.t tbody tr.zebra:nth-child(even){background:var(--surface-2)}
+table.t .num{font-family:var(--font-mono);font-size:13px;color:var(--text);text-align:right}
+table.t .trend-up{color:var(--success);font-weight:600}
+table.t .trend-down{color:var(--danger);font-weight:600}
+
+table.cmp th[scope="col"]{background:var(--brand);color:var(--on-primary)}
+table.cmp th[scope="col"].best{background:var(--brand-hover)}
+table.cmp .check{color:var(--success);font-weight:700;text-align:center}
+table.cmp .x{color:var(--danger);text-align:center}
+
+/* =====================================================================
+   STEPS
+   ===================================================================== */
+.steps{counter-reset:s;list-style:none;padding:0;margin:var(--gap-lg) 0;display:flex;flex-direction:column;gap:var(--gap-lg)}
+.steps > li{
+  counter-increment:s;
+  display:grid;grid-template-columns:44px 1fr;column-gap:var(--gap);row-gap:0;
+  position:relative;
+}
+/* Força todo o conteúdo (h4, p, etc.) para a coluna 2 — sem isso o
+   auto-placement do grid joga o <p> para a coluna 1 (44px) e o texto
+   quebra uma palavra por linha. O ::before (número) fica na coluna 1. */
+.steps > li > *{grid-column:2;min-width:0}
+.steps > li::before{
+  content:counter(s,decimal-leading-zero);
+  width:36px;height:36px;display:grid;place-items:center;
+  background:var(--brand);color:var(--on-primary);font-weight:700;font-size:14px;
+  font-family:var(--font-mono);border-radius:var(--r-pill);
+  box-shadow:var(--shadow-1);
+}
+.steps > li:not(:last-child)::after{
+  content:"";position:absolute;left:17px;top:40px;bottom:-24px;width:2px;background:var(--border);
+}
+.steps h4{margin:0 0 6px;font-size:16px;color:var(--text);font-weight:600}
+.steps p{margin:0;color:var(--meta);font-size:14.5px}
+.steps li.done::before{background:var(--success)}
+.steps li.current::before{background:var(--brand);box-shadow:0 0 0 4px var(--info-bg), var(--shadow-1)}
+
+/* =====================================================================
+   TABS (CSS-only)
+   ===================================================================== */
+.tabs{margin:var(--gap-lg) 0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface);box-shadow:var(--shadow-1)}
+.tabs input{position:absolute;opacity:0;pointer-events:none}
+.tabs > .tab-labels{display:flex;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.tabs > .tab-labels label{
+  padding:12px 20px;font-size:13px;font-weight:600;color:var(--meta);
+  cursor:pointer;border-right:1px solid var(--border);transition:all .15s;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.tabs > .tab-labels label:hover{color:var(--brand)}
+.tabs > .tab-panels > .panel{display:none;padding:var(--gap-lg)}
+.tabs > .tab-panels > .panel pre{margin:0}
+
+#tb1:checked ~ .tab-labels label[for="tb1"],
+#tb2:checked ~ .tab-labels label[for="tb2"],
+#tb3:checked ~ .tab-labels label[for="tb3"]{color:var(--brand);background:var(--surface);border-bottom:2px solid var(--brand);margin-bottom:-1px}
+#tb1:checked ~ .tab-panels > .panel--1,
+#tb2:checked ~ .tab-panels > .panel--2,
+#tb3:checked ~ .tab-panels > .panel--3{display:block}
+
+/* =====================================================================
+   FAQ
+   ===================================================================== */
+.faq{margin:var(--gap-lg) 0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface);box-shadow:var(--shadow-1)}
+.faq details{border-bottom:1px solid var(--border)}
+.faq details:last-child{border-bottom:0}
+.faq summary{
+  list-style:none;padding:var(--gap) var(--gap-lg);cursor:pointer;
+  font-weight:600;color:var(--text);display:flex;justify-content:space-between;align-items:center;
+  background:var(--surface);
+  transition:background .15s ease;
+}
+.faq summary:hover{background:var(--surface-2)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{
+  content:"+";color:var(--brand);font-weight:400;font-size:22px;line-height:1;
+  width:28px;height:28px;display:grid;place-items:center;border-radius:var(--r-pill);
+  background:var(--info-bg);transition:transform .2s ease;
+}
+.faq details[open] > summary{background:var(--info-bg);color:var(--brand)}
+.faq details[open] > summary::after{transform:rotate(45deg)}
+.faq .faq-body{padding:0 var(--gap-lg) var(--gap);color:var(--meta)}
+.faq .faq-body p{margin:var(--gap-sm) 0}
+
+/* =====================================================================
+   RELATED CARDS
+   ===================================================================== */
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--gap);margin:var(--gap-lg) 0}
+.rel-card{
+  display:flex;flex-direction:column;gap:8px;padding:var(--gap-lg);
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  transition:all .2s ease;text-decoration:none;color:inherit;
+  box-shadow:var(--shadow-1);
+}
+.rel-card:hover{border-color:var(--brand);text-decoration:none;transform:translateY(-2px);box-shadow:var(--shadow-2)}
+.rel-card .cat{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--brand);font-weight:600}
+.rel-card h5{margin:0;font-size:15px;color:var(--text);font-weight:600;line-height:1.35}
+.rel-card p{margin:0;font-size:13.5px;color:var(--meta);line-height:1.5}
+.rel-card .arrow{margin-top:auto;color:var(--brand);font-size:14px;font-weight:600}
+
+/* =====================================================================
+   TIMELINE
+   ===================================================================== */
+.timeline{margin:var(--gap-lg) 0;padding-left:0;list-style:none}
+.timeline > li{position:relative;padding:0 0 var(--gap-lg) var(--gap-lg);border-left:2px solid var(--border);margin-left:8px}
+.timeline > li:last-child{border-left-color:transparent;padding-bottom:0}
+.timeline > li::before{
+  content:"";position:absolute;left:-7px;top:4px;width:14px;height:14px;
+  background:var(--brand);border:3px solid var(--bg);border-radius:var(--r-pill);
+  box-shadow:var(--shadow-1);
+}
+.timeline > li.major::before{background:var(--success)}
+.timeline > li time{
+  display:block;color:var(--meta);font-size:12px;font-family:var(--font-mono);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;
+}
+.timeline > li h4{margin:0 0 4px;font-size:15px;color:var(--text);font-weight:600}
+.timeline > li p{margin:0;color:var(--meta);font-size:14px;line-height:1.55;max-width:none}
+.timeline > li .v{
+  display:inline-block;font-family:var(--font-mono);background:var(--info-bg);
+  color:var(--brand);padding:2px 10px;font-size:12px;font-weight:600;margin-right:8px;
+  border-radius:var(--r-pill);
+}
+
+/* =====================================================================
+   CHARTS â€” rounded containers, bars com top corners arredondados
+   ===================================================================== */
+.chart{
+  margin:var(--gap-lg) 0;padding:var(--gap-lg);
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-1);
+}
+.chart > h5{margin:0 0 4px;font-size:15px;font-weight:600;color:var(--text)}
+.chart > .chart-sub{margin:0 0 var(--gap);font-size:13px;color:var(--meta)}
+.chart .legend{display:flex;flex-wrap:wrap;gap:var(--gap);margin-top:var(--gap);font-size:12px;color:var(--meta)}
+.chart .legend span{display:inline-flex;align-items:center;gap:6px}
+.chart .legend i{width:12px;height:12px;display:inline-block;background:var(--c,var(--brand));border-radius:var(--r-xs)}
+
+/* â€”â€” 1. Horizontal bars â€”â€” */
+.bar-h{display:flex;flex-direction:column;gap:14px}
+.bar-h .row{display:grid;grid-template-columns:140px 1fr 60px;align-items:center;gap:12px;font-size:13px}
+.bar-h .row .lbl{color:var(--text);font-weight:500}
+.bar-h .row .val{text-align:right;font-family:var(--font-mono);font-size:13px;color:var(--text);font-weight:600}
+.bar-h .track{
+  height:20px;background:var(--info-bg);border-radius:var(--r-pill);
+  position:relative;overflow:hidden;
+}
+.bar-h .fill{
+  height:100%;background:var(--c,var(--brand));width:var(--p,0%);
+  border-radius:var(--r-pill);
+  transition:width .8s cubic-bezier(.2,.7,.2,1);
+  position:relative;
+}
+.bar-h .fill::after{content:attr(data-tip);position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--on-primary);font-size:11px;font-weight:600;font-family:var(--font-mono)}
+
+/* â€”â€” 2. Vertical bars â€”â€” */
+.bar-v{position:relative;display:grid;grid-template-columns:36px 1fr;gap:8px}
+.bar-v .plot{
+  display:grid;grid-template-columns:repeat(var(--cols,12),1fr);gap:8px;align-items:end;
+  height:240px;border-bottom:1px solid var(--border);position:relative;
+}
+.bar-v .plot::before,.bar-v .plot::after{
+  content:"";position:absolute;left:0;right:0;border-top:1px dashed var(--border);pointer-events:none;
+}
+.bar-v .plot::before{top:0}
+.bar-v .plot::after{top:50%}
+.bar-v .col{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:6px;position:relative}
+.bar-v .col .bar{
+  width:100%;max-width:32px;background:var(--c,var(--brand));
+  height:var(--h,0%);
+  border-radius:var(--r) var(--r) 0 0;          /* â†— top rounded */
+  transition:height .8s cubic-bezier(.2,.7,.2,1);
+  position:relative;
+}
+.bar-v .col .bar:hover::after{
+  content:attr(data-val);position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);
+  background:var(--text);color:var(--on-primary,#fff);padding:4px 10px;font-size:11px;white-space:nowrap;font-family:var(--font-mono);
+  border-radius:var(--r);box-shadow:var(--shadow-2);
+}
+.bar-v .x-labels{display:grid;grid-template-columns:repeat(var(--cols,12),1fr);gap:8px;margin-top:6px;font-size:11px;color:var(--meta);text-align:center;font-family:var(--font-mono);text-transform:uppercase}
+
+/* â€”â€” 3. Grouped â€”â€” */
+.bar-v .col.group{flex-direction:row;align-items:flex-end;gap:3px}
+.bar-v .col.group .bar{max-width:14px}
+
+/* â€”â€” 4. Stacked (com radius sÃ³ na barra de cima) â€”â€” */
+.bar-v .col.stack{justify-content:flex-end}
+.bar-v .col.stack .bar{
+  width:100%;max-width:32px;height:100%;
+  background:transparent;border-radius:0;
+  display:flex;flex-direction:column-reverse;justify-content:flex-start;
+  overflow:hidden;border-radius:var(--r) var(--r) 0 0;       /* container rounded top */
+}
+.bar-v .col.stack .seg{
+  width:100%;background:var(--c,var(--brand));
+  height:var(--h,0%);flex-shrink:0;
+  transition:height .8s cubic-bezier(.2,.7,.2,1);
+}
+
+/* â€”â€” 5. Progress â€”â€” */
+.progress{
+  height:8px;background:var(--info-bg);overflow:hidden;
+  border-radius:var(--r-pill);margin:8px 0;
+}
+.progress > i{
+  display:block;height:100%;background:var(--c,var(--brand));width:var(--p,0%);
+  border-radius:var(--r-pill);
+  transition:width .8s ease-out;
+}
+
+/* â€”â€” 6. Donut (conic-gradient) â€”â€” */
+.donut{
+  --p:65; --c:var(--brand); --bg:var(--info-bg);
+  width:140px;height:140px;border-radius:var(--r-pill);
+  background:conic-gradient(var(--c) calc(var(--p) * 1%), var(--bg) 0);
+  display:grid;place-items:center;position:relative;
+}
+.donut::before{
+  content:"";position:absolute;inset:18px;
+  background:var(--surface);border-radius:var(--r-pill);
+}
+.donut > b{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;line-height:1.05;
+  font-size:24px;color:var(--brand);font-weight:700;
+}
+.donut > b small{display:block;font-size:11px;font-weight:500;color:var(--meta);text-transform:uppercase;letter-spacing:.1em;margin-top:4px;line-height:1.2}
+
+/* â€”â€” 7. Gauge â€”â€” */
+.gauge{--p:72; width:200px;height:115px;position:relative}
+.gauge .ring{width:200px;height:100px;overflow:hidden;position:relative}
+.gauge .ring::before{
+  content:"";position:absolute;width:200px;height:200px;
+  background:conic-gradient(from -90deg, var(--brand) 0 calc(var(--p) * 1.8deg), var(--info-bg) 0 180deg, transparent 180deg);
+  border-radius:var(--r-pill);left:0;top:0;
+}
+.gauge .ring::after{
+  content:"";position:absolute;width:160px;height:160px;
+  background:var(--surface);border-radius:var(--r-pill);left:20px;top:20px;
+}
+.gauge > b{
+  position:absolute;left:0;right:0;bottom:0;text-align:center;line-height:1.1;
+  font-size:22px;color:var(--brand);font-weight:700;
+}
+.gauge > b small{display:block;font-size:10px;font-weight:500;color:var(--meta);text-transform:uppercase;letter-spacing:.1em;margin-top:2px;line-height:1.2}
+
+.donut-row{display:flex;gap:var(--gap-lg);flex-wrap:wrap;align-items:center}
+
+/* â€”â€” 8. Heatmap â€”â€” */
+.heatmap{display:grid;grid-template-columns:32px repeat(12,1fr);gap:4px;font-size:11px;color:var(--meta);font-family:var(--font-mono)}
+.heatmap .lbl{display:grid;place-items:center;text-transform:uppercase}
+.heatmap .cell{
+  aspect-ratio:1;
+  background:rgba(var(--brand-rgb), var(--i,0));
+  border:1px solid var(--surface-2);border-radius:var(--r-xs);
+  position:relative;cursor:pointer;transition:transform .12s ease;
+}
+.heatmap .cell:hover{transform:scale(1.15);z-index:1;box-shadow:var(--shadow-2)}
+.heatmap .cell:hover::after{
+  content:attr(data-val);position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
+  background:var(--text);color:var(--on-primary,#fff);font-size:10px;padding:3px 7px;white-space:nowrap;z-index:2;
+  border-radius:var(--r);box-shadow:var(--shadow-2);margin-bottom:4px;
+}
+.heatmap .head{font-weight:600;color:var(--text);display:grid;place-items:center;text-align:center}
+
+/* â€”â€” 9. Sparkline â€”â€” */
+.spark{display:inline-grid;grid-template-columns:repeat(7,4px);gap:2px;align-items:end;height:18px;vertical-align:middle}
+.spark > i{background:var(--brand);height:var(--h,30%);display:block;border-radius:var(--r-xs) var(--r-xs) 0 0}
+
+/* =====================================================================
+   BUTTONS (caso reutilize fora dos elementos doc)
+   ===================================================================== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:var(--font);font-size:14px;font-weight:600;
+  padding:10px 20px;border-radius:var(--r);border:1px solid transparent;cursor:pointer;
+  transition:all .15s ease;text-decoration:none;
+}
+.btn-primary{background:var(--brand);color:var(--on-primary);box-shadow:var(--shadow-1)}
+.btn-primary:hover{background:var(--brand-hover);box-shadow:var(--shadow-2);text-decoration:none}
+.btn-outline{background:transparent;color:var(--brand);border-color:var(--brand)}
+.btn-outline:hover{background:var(--brand);color:var(--on-primary);text-decoration:none}
+
+/* =====================================================================
+   UTIL
+   ===================================================================== */
+.cluster{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cluster-lg{display:flex;flex-wrap:wrap;gap:var(--gap);align-items:center;margin:var(--gap) 0}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(40px);
+  background:var(--text);color:var(--on-primary,#fff);padding:12px 20px;font-size:13px;
+  opacity:0;transition:.2s;pointer-events:none;z-index:99;
+  border-radius:var(--r);box-shadow:var(--shadow-2);
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ====== FOOTER signature ====== */
+.ds-footer{margin-top:var(--gap-2xl);padding:var(--gap-lg) 0 var(--gap-2xl);border-top:1px solid var(--border);background:var(--surface);transition:background .25s ease,border-color .25s ease}
+.ftr-signature{display:grid;grid-template-columns:auto 1fr auto;gap:var(--gap-lg);align-items:center;max-width:1280px;margin:0 auto;padding:var(--gap-lg) var(--gap-xl)}
+.ftr-signature .sig-label{text-align:left;line-height:1.4}
+.ftr-signature .sig-label small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--meta);font-weight:600;margin-bottom:6px}
+.ftr-signature .sig-label .seal{display:inline-block;font-family:var(--font-mono);font-size:10.5px;color:var(--brand);background:var(--info-bg);padding:3px 10px;border-radius:var(--r-pill);border:1px solid var(--border)}
+.ftr-signature .sig-author{display:flex;align-items:center;gap:14px;justify-content:center}
+.ftr-signature .sig-author .avatar{width:48px;height:48px;border-radius:var(--r-pill);background:var(--brand);color:var(--on-primary);display:grid;place-items:center;font-weight:700;font-size:16px;box-shadow:var(--shadow-1);flex:none}
+/* foto no lugar das iniciais: mesma caixa, recortada ao centro */
+.ftr-signature .sig-author img.avatar{object-fit:cover;object-position:center top;background:var(--surface-3)}
+.ftr-signature .sig-info b{display:block;color:var(--text);font-size:16px;font-weight:700;line-height:1.2}
+.ftr-signature .sig-info span{display:block;font-size:13px;color:var(--meta);line-height:1.4;margin-top:2px}
+.ftr-signature .sig-contact{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;color:var(--meta);font-family:var(--font-mono);text-align:right}
+.ftr-signature .sig-contact a{color:var(--brand)}
+.ftr-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--gap);max-width:1280px;margin:0 auto;padding:var(--gap) var(--gap-xl) 0;border-top:1px solid var(--border);font-size:12px;color:var(--meta)}
+@media(max-width:760px){.ftr-signature{grid-template-columns:1fr;text-align:center}.ftr-signature .sig-label,.ftr-signature .sig-contact{text-align:center;align-items:center}.ftr-signature .sig-author{justify-content:center}}
+
+/* Disable transitions during theme switch to avoid flash */
+:root.theme-switching * { transition: none !important; }
+
+/* =====================================================================
+   FORM INPUT / FILTRO â€” combina com .pill, raio pequeno, theme-aware
+   ===================================================================== */
+.field,.filter{padding:7px 13px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.4;transition:border-color .15s,box-shadow .15s,background .25s}
+.field::placeholder,.filter::placeholder{color:var(--meta)}
+.field:hover,.filter:hover{border-color:var(--brand)}
+.field:focus,.filter:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--info-bg)}
+.field:disabled,.filter:disabled{opacity:.55;cursor:not-allowed}
+.field--sm,.filter--sm{padding:5px 10px;font-size:12px}
+.field--block,.filter--block{width:100%}
+
+/* =====================================================================
+   EXTENSÕES — stat cards, icon cards e hero (coerentes com os tokens)
+   ===================================================================== */
+
+/* —— Logo no header (imagem, troca por tema) —— */
+.hdr-logo{display:inline-flex;align-items:center;line-height:0}
+.hdr-logo img{height:30px;width:auto;display:block}
+.hdr-logo .logo-dark{display:none}
+:root[data-theme="dark"] .hdr-logo .logo-light{display:none}
+:root[data-theme="dark"] .hdr-logo .logo-dark{display:block}
+
+/* —— Logo no footer (acima da assinatura) —— */
+.ftr-logo{height:26px;width:auto;display:block;margin-bottom:10px}
+.ftr-logo.logo-dark{display:none}
+:root[data-theme="dark"] .ftr-logo.logo-light{display:none}
+:root[data-theme="dark"] .ftr-logo.logo-dark{display:block}
+
+/* —— Ícone circular (usa SVG stroke=currentColor) —— */
+.ic-circle{
+  width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;
+  border-radius:var(--r-pill);background:var(--info-bg);color:var(--brand);
+}
+.ic-circle svg{width:22px;height:22px;stroke-width:2;fill:none;stroke:currentColor}
+.ic-circle.is-success{background:var(--success-bg);color:var(--success-fg)}
+.ic-circle.is-warning{background:var(--warning-bg);color:var(--warning-fg)}
+.ic-circle.is-danger{background:var(--danger-bg);color:var(--danger-fg)}
+.ic-circle.is-neutral{background:var(--neutral-bg);color:var(--neutral-fg)}
+.ic-sm{width:34px;height:34px;flex-basis:34px}
+.ic-sm svg{width:17px;height:17px}
+
+/* —— Stat cards (número grande / KPI) —— */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--gap);margin:var(--gap-lg) 0}
+.stat-card{
+  display:flex;flex-direction:column;gap:10px;padding:var(--gap-lg);
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-1);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-2);border-color:var(--brand)}
+.stat-card .stat-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stat-card .stat-num{font-size:30px;line-height:1.1;font-weight:700;color:var(--brand);font-family:var(--font);letter-spacing:-.02em}
+.stat-card .stat-num small{font-size:15px;font-weight:600;color:var(--meta);letter-spacing:0}
+.stat-card .stat-lbl{font-size:13px;color:var(--text);font-weight:600}
+.stat-card .stat-sub{font-size:12.5px;color:var(--meta);line-height:1.45;margin:0}
+
+/* —— Icon feature cards (ícone + título + texto) —— */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--gap);margin:var(--gap-lg) 0}
+.feat-card{
+  display:flex;flex-direction:column;gap:10px;padding:var(--gap-lg);
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-1);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.feat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-2);border-color:var(--brand)}
+.feat-card h5{margin:0;font-size:15.5px;font-weight:600;color:var(--text);line-height:1.35}
+.feat-card p{margin:0;font-size:13.5px;color:var(--meta);line-height:1.55;max-width:none}
+.feat-card .feat-tag{margin-top:auto;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--brand);font-weight:600}
+
+/* —— Linha de ícone + texto (lista enriquecida) —— */
+.ic-list{list-style:none;margin:var(--gap-lg) 0;padding:0;display:flex;flex-direction:column;gap:var(--gap)}
+.ic-list > li{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;max-width:var(--measure)}
+.ic-list > li b{display:block;color:var(--text);font-size:14.5px;margin-bottom:2px}
+.ic-list > li p{margin:0;color:var(--meta);font-size:14px;line-height:1.55;max-width:none}
+
+/* —— Hero card (destaque com gradiente sutil) —— */
+.hero-card{
+  display:grid;grid-template-columns:auto 1fr;gap:var(--gap-lg);align-items:center;
+  padding:var(--gap-lg) var(--gap-xl);margin:var(--gap-lg) 0;
+  background:linear-gradient(135deg,var(--info-bg),var(--surface));
+  border:1px solid var(--border);border-left:3px solid var(--brand);
+  border-radius:var(--r-xl);box-shadow:var(--shadow-1);
+}
+.hero-card .ic-circle{width:56px;height:56px;flex-basis:56px;background:var(--brand);color:var(--on-primary)}
+.hero-card .ic-circle svg{width:28px;height:28px}
+.hero-card h3{margin:0 0 4px;font-size:18px;color:var(--text);font-weight:700}
+.hero-card p{margin:0;color:var(--text-2);font-size:14.5px;line-height:1.55;max-width:none}
+@media(max-width:560px){.hero-card{grid-template-columns:1fr;text-align:left}}
+
+/* =====================================================================
+   CODETABS — exemplo de código em várias linguagens (Python/Java/C#).
+   Escala para múltiplos blocos por página (controlado por JS, sem IDs
+   globais). Padrão: SEMPRE oferecer o exemplo nas três linguagens.
+   ===================================================================== */
+.codetabs{margin:var(--gap-lg) 0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-1);background:var(--code-bg)}
+.codetabs-bar{display:flex;align-items:stretch;background:var(--code-bg-2);border-bottom:1px solid var(--surface-inv)}
+.codetabs-bar .codetab{
+  background:transparent;border:0;border-right:1px solid var(--surface-inv);
+  color:var(--code-muted);font-family:var(--font-mono);font-size:12px;
+  padding:10px 18px;cursor:pointer;text-transform:uppercase;letter-spacing:.08em;
+  transition:color .15s,background .15s,border-color .15s;
+}
+.codetabs-bar .codetab:hover{color:#fff;background:rgba(255,255,255,.04)}
+.codetabs-bar .codetab.active{color:#7AC1D6;border-bottom:2px solid #7AC1D6;margin-bottom:-1px;font-weight:600}
+.codetabs-copy{
+  margin-left:auto;background:transparent;border:0;border-left:1px solid var(--surface-inv);
+  color:var(--code-muted);font-family:var(--font-mono);font-size:11px;
+  padding:0 16px;cursor:pointer;text-transform:uppercase;letter-spacing:.1em;
+  transition:color .15s,background .15s;
+}
+.codetabs-copy:hover{color:#fff;background:rgba(255,255,255,.04)}
+.codetabs-panel{display:none}
+.codetabs-panel.active{display:block}
+.codetabs-panel pre{margin:0;border:0;border-radius:0;box-shadow:none}
+
+/* =====================================================================
+   FRONT MATTER — bloco de metadados padrão no topo de CADA documento.
+   O histórico de revisões só deve ganhar uma nova linha quando o
+   documento for promovido a status "Published".
+   ===================================================================== */
+.frontmatter{border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);box-shadow:var(--shadow-1);margin:0 0 var(--gap-xl);overflow:hidden}
+.frontmatter .fm-head{display:flex;align-items:center;justify-content:space-between;gap:var(--gap);padding:var(--gap) var(--gap-lg);background:var(--surface-3);border-bottom:1px solid var(--border)}
+.frontmatter .fm-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--brand);display:flex;align-items:center;gap:8px}
+.frontmatter .fm-title svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+.fm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin:0;padding:0}
+.fm-grid > div{display:flex;flex-direction:column;gap:3px;padding:11px var(--gap-lg);border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+.fm-grid dt{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--meta);font-weight:600;margin:0}
+.fm-grid dd{margin:0;font-size:14px;color:var(--text);font-weight:500;line-height:1.4}
+.fm-grid .fm-wide{grid-column:1 / -1}
+.fm-history{padding:var(--gap-lg)}
+.fm-history-head{display:flex;align-items:center;justify-content:space-between;gap:var(--gap);flex-wrap:wrap;margin-bottom:var(--gap)}
+.fm-history-head h4{margin:0;font-size:14px;font-weight:600;color:var(--text)}
+.fm-rule{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--warning-fg);background:var(--warning-bg);border:1px solid var(--border);padding:4px 11px;border-radius:var(--r-pill);text-transform:uppercase;letter-spacing:.04em}
+.fm-rule::before{content:"";width:7px;height:7px;border-radius:var(--r-pill);background:var(--warning)}
+.fm-history .table-wrap{margin:0}
+.fm-empty{color:var(--meta);font-style:italic;font-size:13.5px}
+
+/* —— Detalhes por versão (acordeão) — mesma regra: só quando Published —— */
+.fm-notes{padding:0 var(--gap-lg) var(--gap-lg)}
+.fm-notes > h4{margin:0 0 var(--gap-sm);font-size:14px;font-weight:600;color:var(--text)}
+.fm-notes details{border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:var(--gap-sm);background:var(--surface-2);overflow:hidden}
+.fm-notes details:last-child{margin-bottom:0}
+.fm-notes summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:11px var(--gap);font-weight:600;font-size:13.5px;color:var(--text)}
+.fm-notes summary::-webkit-details-marker{display:none}
+.fm-notes summary::after{content:"+";margin-left:auto;color:var(--brand);font-size:20px;line-height:1;width:24px;height:24px;display:grid;place-items:center;border-radius:var(--r-pill);background:var(--info-bg);transition:transform .2s ease}
+.fm-notes details[open] summary::after{transform:rotate(45deg)}
+.fm-notes details[open] summary{border-bottom:1px solid var(--border)}
+.fm-notes .fm-ver{font-family:var(--font-mono);font-size:12px;color:var(--brand);background:var(--info-bg);padding:2px 9px;border-radius:var(--r-pill);border:1px solid var(--border)}
+.fm-notes .fm-when{color:var(--meta);font-weight:400}
+.fm-notes .fm-note-body{padding:var(--gap);font-size:14px;color:var(--text-2);line-height:1.55}
+.fm-notes .fm-note-body p{margin:0 0 8px}
+.fm-notes .fm-note-body ul{margin:8px 0;padding-left:20px}
+.fm-notes .fm-note-body li{margin-bottom:4px}
+.fm-notes .fm-note-meta{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--meta)}
+.fm-notes .fm-note-meta b{color:var(--text-2)}
+
+/* ============================================================================
+   IMPRESSÃO — papel é outro meio, não uma captura da tela
+   ----------------------------------------------------------------------------
+   Duas coisas precisam mudar, e a segunda é a que costuma ser esquecida:
+
+   1) some tudo que só serve para NAVEGAR (header, sidebar, TOC, toast) — em
+      papel não se clica em nada;
+   2) a folha é SEMPRE clara. Não basta clarear o body: cada componente lê o
+      SEU token (o callout lê --success-bg, o cabeçalho de tabela lê
+      --surface-3), e no tema escuro esses tokens são escuros — o resultado era
+      um callout preto com texto preto. Por isso a lista abaixo repete os
+      valores do tema CLARO inteiros: qualquer token que faltar volta a ser
+      escuro na folha.
+
+   O bloco de código é a exceção proposital: ele é escuro nos dois temas, e
+   continua escuro no papel — é assim que se distingue código de prosa.
+   ========================================================================== */
+@media print{
+  :root,
+  :root[data-theme="light"],
+  :root[data-theme="dark"]{
+    --bg:#fff; --surface:#fff; --surface-2:#fbfcfd; --surface-3:#f0f3f5;
+    --border:#e5e7ea; --border-strong:#c8d0d5; --grid-line:#e5e7ea;
+    --text:#2a333a; --text-2:#38434b; --meta:#7a8893; --on-primary:#fff;
+
+    --info:#00708d;    --info-bg:#ebf4f6;    --info-fg:#00708d;
+    --success:#2f8f5f; --success-bg:#e8f3ec; --success-fg:#1e6f45;
+    --warning:#b5740f; --warning-bg:#fbf1db; --warning-fg:#8c5a0b;
+    --danger:#b6322d;  --danger-bg:#fbe9e8;  --danger-fg:#8e2622;
+    --neutral:#59646d; --neutral-bg:#eef1f3; --neutral-fg:#4a555e;
+
+    --shadow-1:none; --shadow-2:none; --shadow-pop:none;
+  }
+  html,body{background:#fff!important;color:var(--text)!important}
+
+  .hdr,.side,.toc,.toast,.theme-toggle,.codetabs-copy{display:none!important}
+
+  /* sem as colunas laterais o conteúdo ocupa a folha inteira */
+  .shell{display:block!important;max-width:none!important;padding:0!important}
+  .content{max-width:none!important;padding:0!important;margin:0!important}
+
+  /* fundo de componente precisa SAIR na impressora: por padrão o navegador
+     descarta cor de fundo, e um callout sem o fundo dele perde a distinção
+     que é justamente o motivo de ele existir */
+  .callout,.stat-card,.rel-card,.frontmatter,.badge,.pill,
+  table.t thead th,.codetabs,.codetabs-body,pre,code{
+    -webkit-print-color-adjust:exact;print-color-adjust:exact
+  }
+
+  /* quebra de página: um título nunca fica sozinho no pé da folha, e um
+     cartão, uma tabela ou um passo nunca se parte ao meio */
+  .doc-h1,.doc-h2,h3,h4{break-after:avoid-page}
+  .stat-card,.rel-card,.callout,.table-wrap,.codetabs,.steps li,.faq details{
+    break-inside:avoid-page
+  }
+
+  /* o endereço de um link importa em papel, onde não há para onde clicar —
+     mas só o externo: "index.html" ao lado do texto seria ruído */
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:11px;color:var(--meta);word-break:break-all}
+
+  /* a folha é clara, então vale o logo do tema CLARO — mesmo que o leitor
+     esteja no escuro na hora de imprimir. Sem isto sai o logo claro sobre
+     papel branco, ou seja, nada. */
+  .ftr-logo.logo-light{display:block!important}
+  .ftr-logo.logo-dark{display:none!important}
+
+  /* detalhes fechados escondem conteúdo que a folha deveria carregar */
+  details{display:block!important}
+  details>summary{list-style:none}
+  details .faq-body,details .fm-note-body{display:block!important}
+
+  @page{margin:14mm}
+}
