@@ -80,21 +80,21 @@ def gravar_config(novos: dict) -> None:
 
 _ZOHO = {
     "invalid_code": ("O código de autorização expirou ou já foi usado. Ele vale 10 minutos. "
-                     "Gere outro no console (passo 5 do wizard) e cole de novo."),
+                     "Gere outro no console (passo 013 do wizard) e cole de novo."),
     "invalid_client": ("Client ID ou Client Secret incorretos. Confira se copiou os dois "
-                       "inteiros, sem espaços (passo 4 do wizard). Se o cliente foi criado "
+                       "inteiros, sem espaços (passo 010 do wizard). Se o cliente foi criado "
                        "no console de outro país, refaça no americano: api-console.zoho.com."),
     "invalid_scope": ("O cliente não tem os escopos necessários. Gere um novo código com a "
-                      "lista completa de escopos (passo 5 do wizard)."),
-    "invalid_grant": ("O acesso foi revogado no 1Password ou na Zoho. Refaça os passos 5 e 6 "
-                      "do wizard para gerar um novo acesso."),
+                      "lista completa de escopos (passos 012 e 013 do wizard)."),
+    "invalid_grant": ("O acesso foi revogado no 1Password ou na Zoho. Refaça os passos 013 a "
+                      "016 do wizard para gerar um novo acesso."),
 }
 
 _HTTP = {
-    401: ("O acesso foi revogado ou o token venceu. Refaça os passos 5 e 6 do wizard "
+    401: ("O acesso foi revogado ou o token venceu. Refaça os passos 013 a 016 do wizard "
           "(/kbr-servicedesk:configurar)."),
     403: ("O cliente não tem permissão para esta operação. Gere um novo código com a lista "
-          "completa de escopos (passo 5 do wizard)."),
+          "completa de escopos (passos 012 e 013 do wizard)."),
     404: "O ServiceDesk não encontrou esse chamado. Confira o número.",
     429: "O ServiceDesk recusou por excesso de chamadas. Espere um minuto e tente de novo.",
 }
@@ -135,9 +135,9 @@ def traduzir(origem: str, corpo: dict, http: int = 0) -> str:
         if codigo in _ZOHO:
             return _ZOHO[codigo]
         if codigo:
-            return (f"A Zoho recusou a autenticação ({codigo}). Refaça os passos 4 a 6 do "
+            return (f"A Zoho recusou a autenticação ({codigo}). Refaça os passos 009 a 016 do "
                     f"wizard (/kbr-servicedesk:configurar).")
-        return ("A Zoho não devolveu um token de acesso. Refaça os passos 5 e 6 do wizard "
+        return ("A Zoho não devolveu um token de acesso. Refaça os passos 013 a 016 do wizard "
                 "(/kbr-servicedesk:configurar).")
     if http in _HTTP:
         return _HTTP[http]
@@ -636,7 +636,7 @@ def cmd_autorizar(_args) -> int:
         # SDP_CLIENT_ID/SDP_CLIENT_SECRET logo abaixo.
         raise ErroSDP(str(erro)) from None
     if not grant:
-        raise ErroSDP("O campo SDP_GRANT_CODE está vazio. Volte ao passo 5 do wizard, "
+        raise ErroSDP("O campo SDP_GRANT_CODE está vazio. Volte ao passo 013 do wizard, "
                       "gere um código no console da Zoho e cole no arquivo de segredos. "
                       "Lembre que ele vale 10 minutos.")
     config = ler_config()
@@ -651,7 +651,7 @@ def cmd_autorizar(_args) -> int:
         raise ErroSDP(traduzir("zoho", corpo or {}))
     if not refresh:
         raise ErroSDP("A Zoho aceitou o código mas não devolveu um refresh token. Gere "
-                      "outro código no passo 5 marcando a opção de acesso offline.")
+                      "outro código no passo 013 marcando a opção de acesso offline.")
     try:
         kbr_secrets.gravar("SDP_REFRESH_TOKEN", refresh)
     except kbr_secrets.ErroSegredo as erro:

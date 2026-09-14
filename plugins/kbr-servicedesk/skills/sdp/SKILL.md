@@ -51,7 +51,7 @@ isso é raríssimo — nenhum técnico da KINTO chega perto desse volume.
 ## O menu
 
 Rode `testar` no começo da conversa para preencher o cabeçalho. Se ele falhar por credencial,
-vá direto para o passo 6.
+vá direto para a opção 6.
 
 ```
 🗂️  GESTOR DE CHAMADOS — ServiceDesk KINTO
@@ -122,11 +122,11 @@ palavras perde essa instrução.
 
 | O que o script diz | O que fazer |
 |---|---|
-| Menciona `/kbr-servicedesk:configurar`, ou "wizard", ou "passo 4/5/6" | Credencial ausente, inválida ou revogada: leve para a opção 6 |
-| "Client ID ou Client Secret incorretos" | Opção 6, passo 4 do wizard |
-| "O acesso foi revogado" (no 1Password ou na Zoho) | Opção 6, passos 5 e 6 do wizard |
-| "O cliente não tem os escopos necessários" / "não tem permissão" | Opção 6, passo 5, com a lista completa de escopos |
-| "O acesso foi revogado ou o token venceu" | Opção 6, passos 5 e 6 do wizard |
+| Menciona `/kbr-servicedesk:configurar`, "wizard", ou um número de passo (ex.: "passo 013") | Credencial ausente, inválida ou revogada: leve para a opção 6 |
+| "Client ID ou Client Secret incorretos" | Opção 6, passo 010 do wizard |
+| "O acesso foi revogado" (no 1Password ou na Zoho) | Opção 6, passos 013 a 016 do wizard |
+| "O cliente não tem os escopos necessários" / "não tem permissão" | Opção 6, passos 012 e 013, com a lista completa de escopos |
+| "O acesso foi revogado ou o token venceu" | Opção 6, passos 013 a 016 do wizard |
 | "Não encontrei o chamado" | Confirme o número com o usuário |
 | "é de espera: o ServiceDesk exige um comentário" | Pergunte o motivo e repita com `--comentario` |
 | "não está salvo em UTF-8" | Peça para salvar o arquivo de novo em UTF-8 e repetir |
