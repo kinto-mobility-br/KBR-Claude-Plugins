@@ -219,7 +219,10 @@ def aplicar_permissoes(base: Path) -> list[str]:
                 avisos.append("não consegui restringir a pasta ao seu usuário com o icacls")
         except FileNotFoundError:
             avisos.append("icacls não encontrado; a pasta ficou com as permissões herdadas")
-        except (OSError, UnicodeDecodeError) as erro:
+        except (OSError, ImportError, UnicodeDecodeError) as erro:
+            # ImportError: antes do Python 3.13, `getpass.getuser()` sem USERNAME no
+            # ambiente cai num `import pwd` que não existe no Windows, e o
+            # ModuleNotFoundError resultante não é OSError.
             avisos.append(
                 f"falha ao rodar o icacls ({erro}); a pasta ficou com as permissões herdadas")
     else:

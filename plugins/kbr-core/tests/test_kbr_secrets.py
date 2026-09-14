@@ -365,23 +365,34 @@ class TestePermissoesComSubprocessSubstituido(unittest.TestCase):
         avisos = kbr_secrets.aplicar_permissoes(self.base)
         self.assertEqual(len(avisos), 1)
 
-    def test_aplicar_permissoes_windows_getpass_getuser_levanta_vira_aviso(self):
-        # sem USERNAME no ambiente, o `or` cai para getpass.getuser() — que no Windows
-        # pode levantar OSError se USERNAME/LOGNAME/USER/LNAME estiverem todos ausentes
-        # (não há fallback via `pwd` nessa plataforma).
+    def _aplicar_com_getuser_falhando(self, excecao):
+        """Roda aplicar_permissoes no ramo Windows sem USERNAME, com getuser falhando."""
         kbr_secrets.os.name = "nt"
         kbr_secrets.subprocess.run = self._run_falso(codigo=0)
 
         def _getuser_que_falha():
-            raise OSError("não foi possível determinar o usuário")
+            raise excecao
 
         kbr_secrets.getpass.getuser = _getuser_que_falha
         usuario_original = os.environ.pop("USERNAME", None)
         try:
-            avisos = kbr_secrets.aplicar_permissoes(self.base)
+            return kbr_secrets.aplicar_permissoes(self.base)
         finally:
             if usuario_original is not None:
                 os.environ["USERNAME"] = usuario_original
+
+    def test_aplicar_permissoes_windows_getpass_getuser_levanta_vira_aviso(self):
+        # Sem USERNAME no ambiente, o `or` cai para getpass.getuser(). Do Python 3.13
+        # em diante ele levanta OSError quando não consegue descobrir o usuário.
+        avisos = self._aplicar_com_getuser_falhando(
+            OSError("não foi possível determinar o usuário"))
+        self.assertEqual(len(avisos), 1)
+
+    def test_aplicar_permissoes_windows_getuser_com_module_not_found_vira_aviso(self):
+        # Antes do Python 3.13, o mesmo cenário cai num `import pwd` — módulo que não
+        # existe no Windows. ModuleNotFoundError NÃO é OSError, então precisa de
+        # tratamento próprio para a função continuar honrando o "nunca levanta".
+        avisos = self._aplicar_com_getuser_falhando(ModuleNotFoundError("No module named 'pwd'"))
         self.assertEqual(len(avisos), 1)
 
     def test_aplicar_permissoes_posix_chmod_levanta_vira_aviso(self):
