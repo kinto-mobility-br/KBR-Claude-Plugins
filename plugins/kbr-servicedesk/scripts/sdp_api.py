@@ -627,7 +627,14 @@ def _limpar_grant_code() -> None:
 
 
 def cmd_autorizar(_args) -> int:
-    grant = kbr_secrets.obter("SDP_GRANT_CODE", obrigatorio=False)
+    try:
+        grant = kbr_secrets.obter("SDP_GRANT_CODE", obrigatorio=False)
+    except kbr_secrets.ErroSegredo as erro:
+        # Defeito do plano original: se SDP_GRANT_CODE apontar para o 1Password
+        # (op://...) e a leitura falhar, ErroSegredo escapava cru de cmd_autorizar —
+        # main() só captura ErroSDP. Mesmo tratamento que _segredo() já dá a
+        # SDP_CLIENT_ID/SDP_CLIENT_SECRET logo abaixo.
+        raise ErroSDP(str(erro)) from None
     if not grant:
         raise ErroSDP("O campo SDP_GRANT_CODE está vazio. Volte ao passo 5 do wizard, "
                       "gere um código no console da Zoho e cole no arquivo de segredos. "

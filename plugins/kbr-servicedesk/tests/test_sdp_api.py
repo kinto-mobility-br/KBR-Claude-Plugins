@@ -749,6 +749,20 @@ class TesteAutorizar(BaseComando):
         self.assertNotIn("rt-novo", texto)
         self.assertEqual(falso.chamadas[0][:2], ["item", "edit"])
 
+    def test_grant_code_via_op_com_falha_vira_errosdp(self):
+        # Defeito encontrado no código de referência do plano: SDP_GRANT_CODE
+        # apontando para o 1Password (op://...) com a leitura falhando fazia
+        # kbr_secrets.ErroSegredo escapar cru de cmd_autorizar — main() só
+        # captura ErroSDP, então o técnico veria um traceback em vez de JSON.
+        kbr_secrets.caminho_arquivo().write_text(
+            "SDP_CLIENT_ID=cid\nSDP_CLIENT_SECRET=csec\n"
+            "SDP_GRANT_CODE=op://Cofre/Item/grant\nSDP_REFRESH_TOKEN=\n", encoding="utf-8")
+        kbr_secrets._rodar_op = OpFalsoSDP(erro="não autenticado", codigo=1)
+        codigo, saida = self.executar("autorizar")
+        self.assertEqual(codigo, 1)
+        erro = self.json_da_saida(saida)["erro"]
+        self.assertIn("SDP_GRANT_CODE", erro)
+
 
 class TesteEscopos(BaseComando):
     def test_lista_os_tres_escopos(self):
