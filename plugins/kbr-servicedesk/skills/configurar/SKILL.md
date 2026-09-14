@@ -89,8 +89,19 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" status --plugin kbr-servic
 | `SDP_CLIENT_ID` ou `SDP_CLIENT_SECRET` vazia | Passo 4 |
 | As duas acima preenchidas, `SDP_GRANT_CODE` vazia | Passo 5 |
 | `SDP_GRANT_CODE` preenchida, `SDP_REFRESH_TOKEN` vazia | Passo 6 |
-| `SDP_REFRESH_TOKEN` preenchida | Passo 7 (confirme nome/e-mail e teste a conexão) |
+| `SDP_REFRESH_TOKEN` preenchida | Passo 7 — mas confira o nome antes, logo abaixo |
 | Tudo preenchido e "proteção ... ativa" | Já está pronto — rode `testar` para confirmar e ofereça sair |
+
+O `status` só enxerga os segredos, nunca o nome do técnico. Quando o `SDP_REFRESH_TOKEN` já
+estiver preenchido, confira se o nome já foi gravado antes de repetir o Passo 7:
+
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/scripts/sdp_api.py" testar
+```
+
+- Respondeu com o nome do técnico: o Passo 7 já foi feito. **Vá direto ao Passo 8.**
+- Disse "Ainda não sei quem é o técnico": faça o Passo 7.
+- Qualquer outro erro: leve ao diagnóstico do Passo 7.
 
 Se algo já estava pronto, **diga isso antes de seguir** ("você já tinha o Client ID e o Client
 Secret gravados, vamos direto para gerar o código").
@@ -181,6 +192,11 @@ e mostre o campo `escopos_em_uma_linha` da resposta — é a linha única de per
 Se demorar mais que isso, é só gerar outro — não estraga nada.
 
 **Execute:** `editar`. **Peça:** cole em `SDP_GRANT_CODE=`, salve e feche.
+
+⚠️ **Aqui vai o código em si, nunca uma referência `op://`.** Mesmo que a pessoa use 1Password
+e as outras chaves apontem para o cofre, esta não pode — o passo 6 apaga o código depois de
+usá-lo, e apagaria a referência junto. Se ela colar uma referência, peça para trocar pelo
+código antes de seguir.
 
 **Verifique:**
 ```bash
@@ -282,6 +298,7 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" proteger
 | 7 | Conecta mas conta zero | Ou não há chamados abertos, ou o nome está escrito diferente do portal — confira a grafia exata |
 | 7 | "Ainda não sei quem é o técnico" | O nome não foi gravado no passo 7; rode o comando de gravação de novo |
 | 7 | "O acesso foi revogado ou o token venceu" | O acesso foi revogado na Zoho (o Self Client pode continuar existindo). Refaça os passos 5 e 6 |
+| 6 ou 7 | "O acesso foi revogado no 1Password ou na Zoho" | Mesma coisa dita pela Zoho em vez do ServiceDesk. Refaça os passos 5 e 6 |
 | 7 | "O cliente não tem permissão para esta operação" | Faltou algum escopo. Refaça os passos 5 e 6 com a lista completa de `escopos` |
 | qualquer | "Não consegui falar com o ServiceDesk" | Rede ou VPN. Tente de novo em um minuto |
 | qualquer | "... não parece ter sido o ServiceDesk quem respondeu" | Proxy ou portal cativo na frente da rede. Confira a VPN e tente de novo |
