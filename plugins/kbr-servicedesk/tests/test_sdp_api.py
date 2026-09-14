@@ -134,6 +134,16 @@ class TesteConfig(BaseSDP):
         self.assertEqual(dados["outro_plugin"], {"x": 1})
 
 
+class TesteDataParaMs(BaseSDP):
+    def test_meia_noite_utc(self):
+        # Verificado ao vivo em 2026-09-14 (spec, seção 2.2): 1756684800000 ms é
+        # 2025-09-01T00:00:00 UTC — a mesma forma usada na busca real contra o SDP.
+        self.assertEqual(sdp_api._data_para_ms("2025-09-01"), "1756684800000")
+
+    def test_um_mes_depois(self):
+        self.assertEqual(sdp_api._data_para_ms("2025-10-01"), "1759276800000")
+
+
 class TesteToken(BaseSDP):
     def test_troca_refresh_por_access(self):
         rede = self.rede({"access_token": "acc-1", "expires_in": 3600})

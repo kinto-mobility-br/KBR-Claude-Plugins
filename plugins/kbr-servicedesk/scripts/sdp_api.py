@@ -16,6 +16,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -280,6 +281,17 @@ STATUS_FINAIS = ["Resolved", "Closed", "Canceled"]
 # com o data center US da Zoho), então nenhum chamado tinha esse status exato e o filtro
 # vazava 335 chamados cancelados como se fossem "abertos" (total_count 517 vs 182 reais).
 # Se um dia o SDP usar as duas grafias ao mesmo tempo, listar as duas aqui.
+
+
+def _data_para_ms(data_iso: str) -> str:
+    """Converte "AAAA-MM-DD" em milissegundos desde a época Unix, meia-noite UTC.
+
+    É a mesma forma verificada ao vivo contra o SDP real da KINTO (spec de 2026-09-14,
+    seção 2.2): um único campo de data em ms, como string. Não ajusta fuso horário local —
+    o teste que fixou este comportamento usa os mesmos valores que a busca real confirmou.
+    """
+    momento = datetime.strptime(data_iso, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    return str(int(momento.timestamp() * 1000))
 
 
 def limpo(bruto: str, limite: int = 3000) -> str:
