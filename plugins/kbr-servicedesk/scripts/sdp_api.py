@@ -298,6 +298,45 @@ def campo(origem: dict, *chaves: str):
     return atual
 
 
+def _extrair(corpo, chave: str, tipo: type):
+    """Extrai `chave` de `corpo`, garantindo que veio no tipo esperado (`list` ou `dict`).
+
+    `corpo` é o dicionário decodificado de uma resposta do SDP — o formato não é garantido
+    pela API. Ausente ou falsy vira o vazio do tipo pedido (`[]`/`{}`), igual ao antigo
+    `or []`/`or {}`: uma lista de chamados vazia continua parecendo lista vazia. A diferença é
+    o caso que faltava — um valor presente e do tipo errado (um dict onde se esperava lista,
+    uma string, um número) não passa mais direto para ser indexado ou iterado. Sem essa
+    checagem esse valor de tipo errado também seria confundido com "não há chamados": o
+    técnico acharia que a lista está vazia quando na verdade a resposta veio malformada. Aqui
+    vira `ErroSDP` com mensagem em português, em vez de `TypeError`/`AttributeError` cru mais
+    adiante.
+    """
+    corpo = corpo if isinstance(corpo, dict) else {}
+    valor = corpo.get(chave)
+    if not valor:
+        return tipo()
+    if not isinstance(valor, tipo):
+        nome_tipo = "uma lista" if tipo is list else "um objeto"
+        raise ErroSDP(
+            f'O ServiceDesk devolveu "{chave}" num formato que eu não entendo (esperava '
+            f'{nome_tipo}). Tente de novo; se persistir, abra o chamado pelo portal.')
+    return valor
+
+
+def _resultado(status: int, corpo, chave: str, tipo: type):
+    """Confere o status HTTP e, se for sucesso, extrai `chave` de `corpo` com `_extrair`.
+
+    As três chamadas que buscam chamados (`achar_id`, `_buscar_chamados`, o detalhe em
+    `cmd_detalhe`) sempre fazem as duas coisas em sequência — por isso ficaram juntas aqui em
+    vez de repetir o par status+forma três vezes. A busca de notas em `cmd_detalhe` é
+    deliberadamente diferente (não levanta em HTTP de erro — ver comentário lá) e por isso usa
+    `_extrair` sozinho, sem passar por aqui.
+    """
+    if status >= 300:
+        raise ErroSDP(traduzir("sdp", corpo, http=status))
+    return _extrair(corpo, chave, tipo)
+
+
 def _exigir_tecnico() -> str:
     nome = (ler_config().get("tecnico_nome") or "").strip()
     if not nome:
@@ -310,10 +349,8 @@ def achar_id(display_id: str, token: str) -> str | None:
     busca = {"list_info": {"row_count": 1, "search_criteria": [
         {"field": "display_id", "condition": "is", "value": str(display_id)}]}}
     status, corpo = chamar("GET", "/requests", busca, token)
-    if status >= 300:
-        raise ErroSDP(traduzir("sdp", corpo, http=status))
-    encontrados = (corpo or {}).get("requests") or []
-    return encontrados[0].get("id") if encontrados else None
+    encontrados = _resultado(status, corpo, "requests", list)
+    return campo(encontrados[0], "id") if encontrados else None
 
 
 def _id_obrigatorio(display_id: str, token: str) -> str:
@@ -334,7 +371,27 @@ def _resumir(bruto: dict) -> dict:
     }
 
 
-def _buscar_chamados(token: str, status_pedido: str | None, todos: bool) -> list[dict]:
+TAMANHO_PAGINA = 100  # linhas por página pedida ao SDP (list_info.row_count)
+
+# Teto de páginas de _buscar_chamados. Só existe para estancar o laço se o SDP nunca zerar
+# has_more_rows — inclusive se vier truthy e não booleano (a string "false", por exemplo, é
+# truthy em Python) — nunca para limitar uma consulta real. Com TAMANHO_PAGINA=100,
+# LIMITE_PAGINAS=100 é um teto de 10 mil chamados numa única busca (vale até para --todos, que
+# inclui o histórico inteiro do técnico). Nenhum técnico da KINTO acumula perto disso em toda
+# a carreira no ServiceDesk — o teto é folga, não limite de uso.
+LIMITE_PAGINAS = 100
+
+
+def _buscar_chamados(token: str, status_pedido: str | None,
+                     todos: bool) -> tuple[list[dict], bool]:
+    """Busca os chamados do técnico, paginando enquanto o SDP disser que há mais linhas.
+
+    Devolve `(chamados, truncado)`. `truncado` só vira True se o laço bateu no teto de
+    páginas sem o SDP nunca zerar `has_more_rows` — nesse caso devolvemos o que já foi
+    coletado em vez de continuar batendo na API (ou de levantar e esconder o que já achamos);
+    quem chama decide como sinalizar isso na saída, porque uma lista incompleta apresentada
+    como se fosse completa faria o técnico achar que não tem mais chamados.
+    """
     tecnico = _exigir_tecnico()
     criterios: list[dict] = [
         {"field": "technician.name", "condition": "is", "value": tecnico}]
@@ -353,17 +410,17 @@ def _buscar_chamados(token: str, status_pedido: str | None, todos: bool) -> list
                           "values": STATUS_FINAIS, "logical_operator": "AND"})
     reunidos: list[dict] = []
     inicio = 1
-    while True:
-        pedido = {"list_info": {"row_count": 100, "start_index": inicio,
+    truncado = True
+    for _ in range(LIMITE_PAGINAS):
+        pedido = {"list_info": {"row_count": TAMANHO_PAGINA, "start_index": inicio,
                                 "get_total_count": True, "search_criteria": criterios}}
         status, corpo = chamar("GET", "/requests", pedido, token)
-        if status >= 300:
-            raise ErroSDP(traduzir("sdp", corpo, http=status))
-        reunidos.extend((corpo or {}).get("requests") or [])
-        if not campo(corpo or {}, "list_info", "has_more_rows"):
+        reunidos.extend(_resultado(status, corpo, "requests", list))
+        if not campo(corpo, "list_info", "has_more_rows"):
+            truncado = False
             break
-        inicio += 100
-    return reunidos
+        inicio += TAMANHO_PAGINA
+    return reunidos, truncado
 
 
 # --------------------------------------------------------------------------- comandos
@@ -371,18 +428,26 @@ def _buscar_chamados(token: str, status_pedido: str | None, todos: bool) -> list
 def cmd_testar(_args) -> int:
     tecnico = _exigir_tecnico()
     token = access_token()
-    abertos = _buscar_chamados(token, None, todos=False)
+    abertos, truncado = _buscar_chamados(token, None, todos=False)
     _imprimir({"conectado": True, "tecnico": tecnico,
                "email": ler_config().get("tecnico_email"),
-               "chamados_abertos": len(abertos)})
+               "chamados_abertos": len(abertos),
+               "truncado": truncado})
     return 0
 
 
 def cmd_listar(args) -> int:
+    # Confere o técnico antes de buscar o token: a mesma ordem trocada, em cmd_testar, fazia
+    # um teste sem self.rede(...) bater numa chamada HTTP real contra a Zoho (Task 9). Aqui
+    # abria a mesma porta — ver TesteListar.test_sem_tecnico_falha_antes_de_qualquer_chamada_
+    # de_rede, que existe justamente para travar se essa ordem regredir de novo.
+    tecnico = _exigir_tecnico()
     token = access_token()
-    brutos = _buscar_chamados(token, getattr(args, "status", None), getattr(args, "todos", False))
-    _imprimir({"tecnico": _exigir_tecnico(), "total": len(brutos),
-               "chamados": [_resumir(item) for item in brutos]})
+    brutos, truncado = _buscar_chamados(
+        token, getattr(args, "status", None), getattr(args, "todos", False))
+    _imprimir({"tecnico": tecnico, "total": len(brutos),
+               "chamados": [_resumir(item) for item in brutos],
+               "truncado": truncado})
     return 0
 
 
@@ -390,13 +455,27 @@ def cmd_detalhe(args) -> int:
     token = access_token()
     interno = _id_obrigatorio(args.numero, token)
     status, corpo = chamar("GET", f"/requests/{interno}", None, token)
-    if status >= 300:
-        raise ErroSDP(traduzir("sdp", corpo, http=status))
-    bruto = (corpo or {}).get("request") or {}
+    bruto = _resultado(status, corpo, "request", dict)
 
     status_notas, corpo_notas = chamar(
         "GET", f"/requests/{interno}/notes", {"list_info": {"row_count": args.notas}}, token)
-    notas = (corpo_notas or {}).get("notes") or [] if status_notas < 300 else []
+    if status_notas >= 300:
+        # Swallow deliberado: um token que venceu entre as duas chamadas, ou falta de
+        # permissão só para notas, não pode derrubar o chamado inteiro — ele ainda vale a
+        # pena mostrar sem as notas. Mas o swallow tem que aparecer na saída
+        # (`notas_indisponiveis`), senão essa falha fica indistinguível de um chamado que
+        # realmente não tem nota nenhuma.
+        notas_brutas: list = []
+        notas_indisponiveis = True
+    else:
+        notas_brutas = _extrair(corpo_notas, "notes", list)
+        for nota in notas_brutas:
+            if not isinstance(nota, dict):
+                raise ErroSDP(
+                    "O ServiceDesk devolveu uma nota num formato que eu não entendo (a busca "
+                    "funcionou, mas o conteúdo não é o esperado). Tente de novo; se "
+                    "persistir, abra o chamado pelo portal.")
+        notas_indisponiveis = False
 
     saida = _resumir(bruto)
     saida.update({
@@ -405,12 +484,13 @@ def cmd_detalhe(args) -> int:
         "categoria": campo(bruto, "category", "name"),
         "email_solicitante": campo(bruto, "requester", "email_id"),
         "descricao": limpo(bruto.get("description")),
+        "notas_indisponiveis": notas_indisponiveis,
         "notas": [{
             "autor": campo(nota, "created_by", "name"),
             "quando": campo(nota, "created_time", "display_value"),
-            "visivel_ao_solicitante": bool(nota.get("show_to_requester")),
-            "texto": limpo(nota.get("description"), 800),
-        } for nota in notas],
+            "visivel_ao_solicitante": bool(campo(nota, "show_to_requester")),
+            "texto": limpo(campo(nota, "description"), 800),
+        } for nota in notas_brutas],
     })
     _imprimir(saida)
     return 0

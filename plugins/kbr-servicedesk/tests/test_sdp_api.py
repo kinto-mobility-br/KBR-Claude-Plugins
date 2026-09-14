@@ -360,6 +360,41 @@ class TesteListar(BaseComando):
         self.assertEqual(codigo, 1)
         self.assertIn("permissão", self.json_da_saida(saida)["erro"].lower())
 
+    def test_sem_tecnico_falha_antes_de_qualquer_chamada_de_rede(self):
+        # Mesma classe de bug já corrigida em cmd_testar (Task 9): se a checagem do técnico
+        # vier depois de access_token(), este teste bate numa chamada HTTP real contra a Zoho
+        # em vez de falhar rápido e determinístico — de propósito, NÃO chamamos self.rede(...)
+        # aqui. Nome pensado para deixar claro o motivo: se a ordem regredir, este teste vira
+        # lento e instável (bate na Zoho de verdade) em vez de simplesmente falhar.
+        sdp_api.gravar_config({"tecnico_nome": ""})
+        codigo, saida = self.executar("listar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("técnico", self.json_da_saida(saida)["erro"].lower())
+
+    def test_requests_como_string_vira_errosdp(self):
+        # Tipo errado e truthy: "or []" não pega, então sem a checagem de forma isso
+        # estouraria TypeError ao tentar iterar/indexar uma string como se fosse lista de
+        # chamados.
+        self.rede(TOKEN_OK, {"requests": "nao e uma lista",
+                             "list_info": {"has_more_rows": False}})
+        codigo, saida = self.executar("listar")
+        self.assertEqual(codigo, 1)
+        erro = self.json_da_saida(saida)["erro"]
+        self.assertIn("formato", erro.lower())
+
+    def test_paginacao_tem_teto_e_sinaliza_truncamento(self):
+        sempre_mais = {"requests": CHAMADO_LISTA["requests"],
+                       "list_info": {"has_more_rows": True}}
+        rede = self.rede(TOKEN_OK, *([sempre_mais] * sdp_api.LIMITE_PAGINAS))
+        codigo, saida = self.executar("listar")
+        self.assertEqual(codigo, 0)
+        dados = self.json_da_saida(saida)
+        self.assertTrue(dados["truncado"])
+        self.assertEqual(len(dados["chamados"]), sdp_api.LIMITE_PAGINAS)
+        # 1 chamada de token + uma por página — nunca mais que o teto, mesmo com has_more_rows
+        # sempre truthy.
+        self.assertEqual(len(rede.chamadas), 1 + sdp_api.LIMITE_PAGINAS)
+
 
 class TesteDetalhe(BaseComando):
     BUSCA = {"requests": [{"id": "173861000000000001", "display_id": "4942"}]}
@@ -401,6 +436,46 @@ class TesteDetalhe(BaseComando):
         codigo, saida = self.executar("detalhe", "9999")
         self.assertEqual(codigo, 1)
         self.assertIn("9999", self.json_da_saida(saida)["erro"])
+
+    def test_requests_como_dict_vira_errosdp(self):
+        # achar_id: "requests" veio como dict (truthy, tipo errado) em vez de lista — sem a
+        # checagem de forma, encontrados[0] estouraria TypeError num dict.
+        self.rede(TOKEN_OK, {"requests": {"nao": "e uma lista"}})
+        codigo, saida = self.executar("detalhe", "4942")
+        self.assertEqual(codigo, 1)
+        erro = self.json_da_saida(saida)["erro"]
+        self.assertIn("formato", erro.lower())
+
+    def test_request_como_lista_vira_errosdp(self):
+        # cmd_detalhe: "request" veio como lista (truthy, tipo errado) em vez de dict — sem a
+        # checagem de forma, campo(bruto, ...) e bruto.get(...) tratariam uma lista como se
+        # fosse o chamado.
+        self.rede(TOKEN_OK, self.BUSCA, {"request": ["nao e um dict"]})
+        codigo, saida = self.executar("detalhe", "4942")
+        self.assertEqual(codigo, 1)
+        erro = self.json_da_saida(saida)["erro"]
+        self.assertIn("formato", erro.lower())
+
+    def test_nota_que_nao_e_dict_vira_errosdp(self):
+        # Um item de "notes" não é dict — sem a checagem por item, nota.get(...) estouraria
+        # AttributeError numa string.
+        self.rede(TOKEN_OK, self.BUSCA, self.DETALHE, {"notes": ["nao e um dict"]})
+        codigo, saida = self.executar("detalhe", "4942")
+        self.assertEqual(codigo, 1)
+        erro = self.json_da_saida(saida)["erro"]
+        self.assertIn("nota", erro.lower())
+
+    def test_falha_ao_buscar_notas_nao_derruba_o_detalhe(self):
+        # O chamado continua aparecendo mesmo se a busca de notas falhar (ex.: token vencido
+        # entre as duas chamadas) — mas a falha tem que ficar visível, não parecer "0 notas".
+        self.rede(TOKEN_OK, self.BUSCA, self.DETALHE,
+                 urllib.error.HTTPError("u", 401, "Unauthorized", {}, io.BytesIO(b"{}")))
+        codigo, saida = self.executar("detalhe", "4942")
+        self.assertEqual(codigo, 0)
+        dados = self.json_da_saida(saida)
+        self.assertEqual(dados["numero"], "4942")
+        self.assertTrue(dados["notas_indisponiveis"])
+        self.assertEqual(dados["notas"], [])
 
 
 class TesteTestar(BaseComando):
