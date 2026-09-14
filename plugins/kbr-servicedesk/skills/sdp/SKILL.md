@@ -1,6 +1,6 @@
 ---
 name: sdp
-description: Painel conversacional dos chamados do ServiceDesk Plus da KINTO — lista os seus chamados, mostra o detalhe de um, adiciona nota, muda status e resolve, sempre com confirmação antes de gravar, e leva ao passo a passo de criar as próprias chaves de acesso quando ainda não há credencial. Use quando o usuário pedir "meus chamados", "abrir o ServiceDesk", "ver o chamado 4942", "responder o solicitante", "resolver o chamado", "SDP", "preciso de acesso ao ServiceDesk", ou invocar /kbr-servicedesk:sdp.
+description: Painel conversacional dos chamados do ServiceDesk Plus da KINTO — lista os seus chamados, mostra o detalhe de um, adiciona nota, muda status e resolve, sempre com confirmação antes de gravar, responde perguntas livres sobre os chamados (contagens, filtros por período, agrupamentos), e leva ao passo a passo de criar as próprias chaves de acesso quando ainda não há credencial. Use quando o usuário pedir "meus chamados", "abrir o ServiceDesk", "ver o chamado 4942", "responder o solicitante", "resolver o chamado", "SDP", "preciso de acesso ao ServiceDesk", "quantos chamados eu abri em setembro", "lista os chamados criados em 09/2026", ou invocar /kbr-servicedesk:sdp.
 ---
 
 # Gestor de chamados — ServiceDesk KINTO
@@ -19,6 +19,10 @@ livre.
 - 🔒 **Segredo nunca no chat.** Não peça, não mostre, não repita valor de `SDP_*`. Se faltar
   credencial, leve para a opção 6.
 - 🔢 **Chamado é sempre pelo número de exibição** (4942). O id interno do SDP não aparece.
+- 🧮 **A opção 7 (pergunta livre) é sempre leitura.** Ela nunca grava, nunca resolve e nunca
+  muda status, nem de um chamado nem de vários — mesmo que o pedido pareça pedir uma ação
+  em massa ("fecha todos de setembro"). Toda escrita passa pelas opções 3, 4 ou 5, um chamado
+  de cada vez, com a confirmação de sempre. Explique isso se alguém pedir ação em lote pela 7.
 - 🇧🇷 Tudo em PT-BR, com acentuação correta.
 
 ## Como chamar o script
@@ -55,40 +59,50 @@ vá direto para a opção 6.
 
 ```
 🗂️  GESTOR DE CHAMADOS — ServiceDesk KINTO
-    Técnico: <nome> · chamados abertos: <N>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 <nome>
+📬 <N> chamados abertos
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. Meus chamados abertos          4. Mudar status de um chamado
-2. Ver detalhe de um chamado      5. Resolver chamado
-3. Adicionar nota a um chamado    6. Criar meu acesso ao ServiceDesk (passo a passo)
-0. Sair
+📋 1. Meus chamados abertos          🔄 4. Mudar status de um chamado
+🔍 2. Ver detalhe de um chamado      ✅ 5. Resolver chamado
+📝 3. Adicionar nota a um chamado    🔑 6. Criar meu acesso ao ServiceDesk
+
+🧮 7. Pergunta livre sobre os chamados
+
+🚪 0. Sair
 ```
 
 A opção 6 é onde a pessoa **cria as próprias chaves** — o Client ID, o Client Secret e o
 acesso permanente. Chame-a assim, com essas palavras, e não de "configuração": quem nunca
 fez isso não sabe que "configurar" quer dizer criar uma credencial.
 
-Se `testar` devolver `truncado: true`, troque "chamados abertos: <N>" por "chamados abertos:
-pelo menos <N>" no cabeçalho.
+A opção 7 é para pedido que não cabe nas seis primeiras: contagem, filtro por data, agrupamento
+— coisas do tipo "quantos eu abri em setembro" ou "lista os chamados criados em 09/2026". Veja
+a seção própria dela, logo abaixo.
+
+Se `testar` devolver `truncado: true`, troque "<N> chamados abertos" por "pelo menos <N>
+chamados abertos" no cabeçalho.
 
 ## Cada opção
 
-1. **Listar** — `listar`, e apresente uma tabela com número, assunto, solicitante, status,
+1. 📋 **Listar** — `listar`, e apresente uma tabela com número, assunto, solicitante, status,
    criado em e urgência. Ofereça filtrar por status ou incluir os finalizados. Se a resposta
    vier com `truncado: true`, avise antes da tabela que a lista pode estar incompleta.
-2. **Detalhe** — peça o número se não veio. `detalhe <nº>`. Mostre assunto, solicitante,
+2. 🔍 **Detalhe** — peça o número se não veio. `detalhe <nº>`. Mostre assunto, solicitante,
    status, datas, descrição e as últimas notas. Se vier `notas_indisponiveis: true`, avise que
    não deu para carregar as notas agora (não é o mesmo que "sem notas") e ofereça tentar de
    novo. Ofereça as ações 3, 4 e 5 sobre esse chamado.
-3. **Nota** — pergunte o que dizer e **se o solicitante deve ver**. Redija o HTML, grave no
+3. 📝 **Nota** — pergunte o que dizer e **se o solicitante deve ver**. Redija o HTML, grave no
    diretório temporário da sessão, rode sem `--confirmar`, mostre a prévia em texto, pergunte,
    e só então repita com `--confirmar`. Apague o arquivo depois.
-4. **Status** — ofereça os status usados na KINTO: Open, In Progress, On Hold, Aguardando
+4. 🔄 **Status** — ofereça os status usados na KINTO: Open, In Progress, On Hold, Aguardando
    Aprovação, Resolved, Closed. **On Hold** e **Aguardando Aprovação** exigem `--comentario`
    com o motivo — pergunte antes. Se o técnico digitar outro status de espera por conta própria
    e o script recusar por falta de comentário, siga a mesma regra: peça o motivo e repita com
    `--comentario`. Confirme e envie.
-5. **Resolver** — peça o texto de conclusão, redija o HTML, simule, mostre, confirme, envie.
-6. **Criar o acesso** — invoque a skill `configurar` deste mesmo plugin. Antes de invocar,
+5. ✅ **Resolver** — peça o texto de conclusão, redija o HTML, simule, mostre, confirme, envie.
+6. 🔑 **Criar o acesso** — invoque a skill `configurar` deste mesmo plugin. Antes de invocar,
    ofereça as duas portas, porque nem todo mundo quer começar agora:
 
    ```
@@ -102,6 +116,30 @@ pelo menos <N>" no cabeçalho.
 
    Se a pessoa não escolher, trate como **b**. Quem chegou aqui por causa de um erro de
    credencial quer resolver, não estudar.
+7. 🧮 **Pergunta livre** — para o que não cabe nas seis opções fixas: contagem, filtro por
+   data, agrupamento, comparação. Exemplos: "quantos chamados eu abri em setembro", "lista os
+   criados em 09/2026", "quais estão abertos há mais tempo".
+
+   **Sempre leitura, nunca escrita.** Se o pedido envolver mudar algo — "fecha todos os de
+   setembro", "responde todos que estão sem retorno" — explique que não existe ação em lote
+   aqui: cada chamado precisa passar pelas opções 3, 4 ou 5, individualmente, com confirmação.
+   Ofereça fazer isso um por um se a pessoa quiser.
+
+   **Como responder:**
+   - Se o pedido não ficou claro, pergunte o suficiente para saber o que buscar — não adivinhe
+     um filtro que a pessoa não pediu.
+   - Busque os dados com `listar --todos` (traz abertos e fechados; sem isso, um pedido sobre
+     um mês passado perderia os já resolvidos). Se o pedido for claramente só sobre os chamados
+     em aberto agora, `listar` sem `--todos` já basta e é mais rápido.
+   - **Não existe filtro de data no script.** Filtre e agrupe você mesmo, a partir da lista que
+     `listar` devolveu — não invente uma flag que não existe.
+   - `criado_em` vem em **inglês**, no formato que a API do SDP devolve (ex.: "May 29, 2026
+     11:26 AM"). Interprete mês e ano nesse formato mesmo respondendo em português.
+   - Responda como contagem quando for contagem, como tabela quando for lista. Não force uma
+     tabela para uma pergunta de sim/não.
+   - **Diga sempre a base usada**, numa frase curta: "com base nos N chamados que `listar
+     --todos` trouxe". Se veio `truncado: true`, avise que a base pode estar incompleta antes
+     de responder — não apresente a resposta como definitiva.
 
 ## Como escrever nota e conclusão
 
