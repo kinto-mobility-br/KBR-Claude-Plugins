@@ -83,21 +83,59 @@ class TesteNega(unittest.TestCase):
         self.assertIsNotNone(self.nega(
             tool_name="FerramentaXYZDesconhecida", path="~/.kbr/secrets.env"))
 
-    # --- Achado 2: Bash casa forma de caminho, não menção solta -----------
+    # --- Rodada 3, achado 1: ".kbr" nega em qualquer posição do "command" --
+    #
+    # Postura fixada na terceira rodada da revisão: dentro de "command", ".kbr"
+    # nega sempre que aparece como segmento de caminho completo, não importa o
+    # que vem antes (início da string, espaço, "/", "~", aspas, ";", "&&"...).
+    # Isso reinstala de propósito o falso positivo que a segunda rodada tinha
+    # removido: um comando cujo texto só *menciona* a pasta protegida — numa
+    # mensagem de commit, num `echo` — volta a ser negado. Não dá pra separar
+    # esse caso de um caminho de verdade sendo endereçado sem rastrear aspas
+    # do shell (que este hook deliberadamente não faz); entre negar à toa
+    # numa frase e deixar passar um comando que lê o arquivo de verdade, a
+    # escolha é negar. Ver docstring do módulo e relatório da task 5.
 
     def test_bash_commit_mencionando_a_pasta_entre_aspas_e_negado(self):
-        # Decisão deliberada (ver relatório da task 5): dentro de "command",
-        # "~/.kbr" citado numa mensagem entre aspas tem a mesma forma textual
-        # — "/" logo antes de ".kbr" — de um caminho de verdade sendo passado
-        # a um comando. Sem rastrear aspas do shell (que este hook não faz),
-        # as duas situações são indistinguíveis a partir do texto ao redor de
-        # ".kbr". Preferimos negar: falso positivo numa mensagem de commit é
-        # incômodo, falso negativo é vazamento.
         self.assertIsNotNone(self.nega(
             tool_name="Bash",
             command='git commit -m "feat(kbr-core): hook que protege ~/.kbr"'))
 
-    # --- Achado 3: secrets.env como segundo marcador -----------------------
+    def test_bash_echo_mencionando_a_pasta_em_prosa_e_negado(self):
+        # Migrado de TestePermite nesta rodada: antes era o caso que provava
+        # que "command" só casava forma de caminho, não menção solta. Essa
+        # distinção foi removida de propósito (ver comentário da seção acima)
+        # — este teste agora prova o oposto, deliberadamente.
+        self.assertIsNotNone(self.nega(
+            tool_name="Bash", command='echo "os segredos ficam dentro de .kbr"'))
+
+    def test_bash_cd_relativo_e_cat_e_negado(self):
+        # Achado 1 da terceira rodada: "cd .kbr" não tem "/", "~" nem letra de
+        # unidade antes de ".kbr" — a exigência de prefixo que existia antes
+        # deixava isso passar, apesar de "cat *.env" ler o conteúdo de dentro
+        # da pasta protegida logo em seguida.
+        self.assertIsNotNone(self.nega(tool_name="Bash", command="cd .kbr && cat *.env"))
+
+    def test_bash_cat_caminho_relativo_do_token_e_negado(self):
+        # Grafia relativa do mesmo arquivo que test_cache_do_token já nega via
+        # file_path — aqui o alvo é endereçado de dentro de um comando Bash,
+        # sem separador nenhum antes de ".kbr".
+        self.assertIsNotNone(self.nega(
+            tool_name="Bash", command="cat .kbr/cache/sdp_access_token.json"))
+
+    def test_bash_cd_encadeado_relativo_e_negado(self):
+        self.assertIsNotNone(self.nega(
+            tool_name="Bash", command="cd; cd .kbr; cat *.env"))
+
+    def test_bash_pushd_relativo_e_negado(self):
+        self.assertIsNotNone(self.nega(
+            tool_name="Bash", command="pushd .kbr && cat *.env && popd"))
+
+    # --- Achado 3 (rodada 2): secrets.env como segundo marcador ------------
+    #
+    # Na terceira rodada esse marcador passou a valer só para "command" do
+    # Bash (achado 2 da terceira rodada — ver TestePermite): os três bypasses
+    # abaixo continuam sendo casos de "command", então continuam negados.
 
     def test_bypass_aspas_no_meio_do_nome_e_negado(self):
         self.assertIsNotNone(self.nega(tool_name="Bash", command='cat ~/.k""br/secrets.env'))
@@ -168,14 +206,32 @@ class TestePermite(unittest.TestCase):
         # legítimo de busca no código-fonte, não um acesso à pasta protegida.
         self.assertIsNone(self.permite(tool_name="Grep", pattern=r"\.kbr", path="."))
 
-    # --- Achado 2: Bash casa forma de caminho, não menção solta -----------
-
-    def test_bash_echo_mencionando_a_pasta_e_permitido(self):
-        self.assertIsNone(self.permite(
-            tool_name="Bash", command='echo "os segredos ficam dentro de .kbr"'))
+    # --- Rodada 2, achado 2 (o que sobra dele após a rodada 3) ------------
+    #
+    # A exigência de forma de caminho em "command" foi removida (ver
+    # TesteNega, seção "Rodada 3, achado 1"): agora até menção solta em prosa
+    # nega. O que continua permitido é só o caso em que ".kbr" nem aparece —
+    # "kbr_secrets" não tem o "." literal antes de "kbr", então nenhum dos
+    # dois marcadores (MARCA ou MARCADOR_SEGREDOS) casa.
 
     def test_bash_grep_por_kbr_secrets_e_permitido(self):
         self.assertIsNone(self.permite(tool_name="Bash", command='grep -rn "kbr_secrets" plugins/'))
+
+    # --- Rodada 3, achado 2: secrets.env só conta no "command" do Bash -----
+    #
+    # O marcador do nome do arquivo (MARCADOR_SEGREDOS) existia para fechar
+    # três grafias que escapam do marcador ".kbr" dentro de um comando Bash
+    # (ver TesteNega, "Achado 3"). Aplicado a qualquer campo, ele também
+    # negava um "secrets.env" de outro projeto sem relação nenhuma com
+    # "~/.kbr" — passou a valer só para "command".
+
+    def test_read_secrets_env_de_outro_projeto_e_permitido(self):
+        self.assertIsNone(self.permite(
+            file_path="E:/Projetos/OutroProjeto/config/secrets.env"))
+
+    def test_edit_secrets_env_de_outro_projeto_e_permitido(self):
+        self.assertIsNone(self.permite(
+            tool_name="Edit", file_path="E:/Projetos/OutroProjeto/config/secrets.env"))
 
 
 class TesteSaida(unittest.TestCase):

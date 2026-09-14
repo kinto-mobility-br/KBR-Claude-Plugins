@@ -3,9 +3,7 @@
 
 Recebe pela entrada padrão o JSON da ferramenta que o Claude Code vai executar e
 nega a chamada quando ela endereça algo dentro de `~/.kbr/` — com a única exceção
-de `config.json` sozinho (nada depois), que não guarda segredo. Dois marcadores
-independentes disparam a negação: o nome do arquivo de segredos (`secrets.env`,
-em qualquer campo inspecionado) e a própria pasta protegida.
+de `config.json` sozinho (nada depois), que não guarda segredo.
 
 Quais campos são inspecionados depende de `tool_name`, porque nem todo campo com
 esses nomes é um caminho: o `pattern` do Grep é uma regex de busca — procurar por
@@ -20,21 +18,30 @@ glob de caminho.
 - Ferramenta desconhecida ou ausente: varre todos os campos candidatos, o padrão
   seguro para uma ferramenta que o hook não conhece.
 
-No campo `command` do Bash, ".kbr" só conta como acesso quando tem forma de
-caminho sendo endereçado — início da string, ou logo depois de "/", "~" ou uma
-letra de unidade —, e não qualquer menção solta em prosa (mensagem de commit,
-`echo`). Nos demais campos (`file_path` e parecidos) o valor inteiro já é um
-caminho, então qualquer menção já é um acesso.
+POSTURA — na dúvida, nega: em qualquer campo, inclusive `command` do Bash,
+".kbr" nega sempre que aparece como segmento de caminho completo (não faz parte
+de uma palavra maior, como ".kbrasil"), não importa o que vem antes — início da
+string, espaço, "/", "~", aspas, ";", "&&", vírgula etc. Isso vale também para
+uma menção solta em prosa dentro de `command`: uma mensagem de commit que só
+cita "~/.kbr", ou um `echo` com a pasta no meio do texto, é negada — de
+propósito. Não dá pra distinguir esse caso de um caminho de verdade sendo
+endereçado sem interpretar aspas do shell (o que este hook deliberadamente não
+faz — ver LIMITES abaixo), e entre negar à toa numa mensagem de commit (o
+usuário reformula a frase) e deixar passar um comando que lê o arquivo de
+verdade (o segredo vaza para o transcript), a escolha é negar. Detalhe e
+exemplos no relatório da task 5.
 
-Um caso não dá pra separar de forma limpa por regex sem interpretar aspas do
-shell: um caminho citado dentro de uma mensagem entre aspas (ex.:
-`git commit -m "... ~/.kbr"`) fica com a mesma forma textual — "/" logo antes de
-".kbr" — de um caminho de verdade sendo passado a um comando. Sem rastrear
-aspas (o que este hook deliberadamente não faz — ver LIMITES abaixo), as duas
-situações são indistinguíveis a partir do texto ao redor de ".kbr"; a decisão
-tomada aqui foi negar nesse caso (falso positivo numa mensagem de commit é
-incômodo; falso negativo é vazamento). Detalhe e exemplos no relatório da
-task 5.
+Segundo marcador, independente de ".kbr": o nome do arquivo de segredos
+(`secrets.env`) dentro do campo `command` do Bash — fecha grafias que escapam
+do marcador acima por causa de aspas no meio do nome da pasta, variável de
+shell ou coringa (".k""br", ".$x", ".kb?") mas que continuam citando
+"secrets.env" por extenso. Esse marcador vale só para `command`: nos campos
+que já são caminho (`file_path`, `notebook_path`, `path`, `pattern` do Glob) o
+valor inteiro endereça um arquivo específico, e "secrets.env" solto ali só
+reconheceria o nome do arquivo — um `secrets.env` de outro projeto, sem
+relação nenhuma com `~/.kbr`, seria negado à toa. Esses campos já são cobertos
+pelo marcador ".kbr" contra a pasta protegida; o marcador do nome do arquivo
+não acrescenta nada a eles além de falso positivo.
 
 LIMITES CONHECIDOS: isto é uma barreira contra exposição acidental no transcript,
 não uma fronteira de segurança. Um script escrito na hora que abra o arquivo por
@@ -72,24 +79,22 @@ CAMPOS_POR_FERRAMENTA: dict[str, tuple[str, ...]] = {
 # Segundo marcador, independente de ".kbr": o próprio nome do arquivo de
 # segredos. Fecha as grafias que escapam do MARCA/padrão-base por causa de
 # aspas no meio do nome, variável de shell ou coringa (".k""br", ".$x", ".kb?")
-# mas que continuam citando "secrets.env" por extenso.
+# mas que continuam citando "secrets.env" por extenso. Só se aplica ao campo
+# `command` do Bash — ver docstring do módulo.
 MARCADOR_SEGREDOS = "secrets.env"
 
 # Depois do marcador, exige fronteira de segmento (nada de alfanumérico/_/- colado
 # — senão ".kbr" também "acharia" ".kbrasil") e captura o que vier depois da barra.
 SUFIXO_FRONTEIRA = r"(?![a-z0-9_\-])(?:/([a-z0-9_.\-/*]*))?"
 
-# `.kbr` como segmento completo, opcionalmente seguido do que vier depois da barra.
-# Usado nos campos onde o valor inteiro já é um caminho (file_path e afins): ali
-# qualquer menção é um acesso, não precisa parecer caminho — já é um.
+# `.kbr` como segmento completo, opcionalmente seguido do que vier depois da
+# barra. Não exige nada antes — nem início de string, nem "/", "~" ou letra de
+# unidade — de propósito: na dúvida, o hook nega, então uma menção solta em
+# prosa dentro do `command` do Bash (mensagem de commit, `echo`) também conta.
+# Usado em todos os campos, inclusive `command`: nos campos onde o valor
+# inteiro já é um caminho (file_path e afins) qualquer menção já era um
+# acesso; agora `command` segue a mesma régua.
 MARCA = re.compile(r"\.kbr" + SUFIXO_FRONTEIRA)
-
-# Só para o campo `command` do Bash: exige que ".kbr" apareça mesmo endereçando
-# um caminho — logo no início da string, ou depois de "/", "~" ou uma letra de
-# unidade (ex.: "c:") — e não uma menção solta em prosa. Isso é o que distingue
-# `cat ~/.kbr/secrets.env` (nega) de `echo "... .kbr"` (permite).
-PREFIXO_CAMINHO = r"(?:^|[/~]|[a-z]:)"
-MARCA_COMANDO = re.compile(PREFIXO_CAMINHO + r"\.kbr" + SUFIXO_FRONTEIRA)
 
 MOTIVO = (
     "Esse caminho guarda os segredos pessoais do usuário (tokens de API) e está "
@@ -117,12 +122,14 @@ def normalizar(texto: str, base: Path) -> str:
 def _protegido(texto: str, base: Path, *, comando: bool = False) -> bool:
     """`texto` já passou por `normalizar`.
 
-    `comando=True` é o modo estrito do campo `command` do Bash: ".kbr" só conta
-    quando tem forma de caminho sendo endereçado, não em qualquer lugar do
-    texto (ver docstring do módulo). Nos demais campos, o valor inteiro já é um
-    caminho, então a checagem ampla (MARCA, sem exigir prefixo) é a certa.
+    `comando=True` sinaliza que `texto` veio do campo `command` do Bash: é o
+    único caso em que o marcador `MARCADOR_SEGREDOS` ("secrets.env") entra em
+    jogo (ver docstring do módulo — nos campos que já são caminho, esse
+    marcador só gera falso positivo em arquivo de outro projeto). O marcador
+    ".kbr" (MARCA), por outro lado, vale do mesmo jeito em todo campo,
+    `command` incluído — não há mais tratamento especial por campo ali.
     """
-    if MARCADOR_SEGREDOS in texto:
+    if comando and MARCADOR_SEGREDOS in texto:
         return True
     alvo = normalizar(str(base), base)
     # Mesma fronteira do MARCA: cobre um KBR_HOME customizado cujo nome não seja
@@ -137,8 +144,7 @@ def _protegido(texto: str, base: Path, *, comando: bool = False) -> bool:
         # com "config.json" e passavam como se fossem o arquivo permitido.
         if resto != "config.json":
             return True
-    marca = MARCA_COMANDO if comando else MARCA
-    for correspondencia in marca.finditer(texto):
+    for correspondencia in MARCA.finditer(texto):
         resto = correspondencia.group(1) or ""
         if resto != "config.json":
             return True
