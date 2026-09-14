@@ -14,6 +14,12 @@
       "description": "Gestor de chamados do ServiceDesk Plus por menu, com wizard de configuração, e extração de dados para CSV/analytics",
       "source": "./plugins/kbr-servicedesk",
       "category": "productivity"
+    },
+    {
+      "name": "kbr-docs",
+      "description": "Gera documentação em HTML com o design system oficial da KINTO, descobrindo a marca do projeto sozinho",
+      "source": "./plugins/kbr-docs",
+      "category": "productivity"
     }
   ]
 }
