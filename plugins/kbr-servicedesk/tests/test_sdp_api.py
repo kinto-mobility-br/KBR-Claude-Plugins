@@ -975,6 +975,10 @@ class TesteEscreverCsv(unittest.TestCase):
     def test_escreve_cabecalho_e_uma_linha_por_chamado(self):
         caminho = Path(self.tmp.name) / "saida.csv"
         sdp_api._escrever_csv(caminho, CHAMADO_QUERY["requests"])
+        # BOM (utf-8-sig) é o que faz o Excel abrir os acentos corretamente — sem esta
+        # asserção, uma regressão para encoding="utf-8" passaria verde (a leitura acima já
+        # descarta o BOM sozinha, então ela não pega essa regressão).
+        self.assertTrue(caminho.read_bytes().startswith(b"\xef\xbb\xbf"))
         with caminho.open(encoding="utf-8-sig", newline="") as arquivo:
             leitor = csv.reader(arquivo, delimiter=";")
             linhas = list(leitor)
@@ -1037,6 +1041,11 @@ class TesteCmdQuery(BaseComando):
         self.assertIn("--ate", erro)
 
     def test_data_mal_formatada_vira_erro_pt_br(self):
+        # Fila de rede vazia de propósito: a validação da data tem que falhar ANTES de
+        # qualquer chamada de rede (inclusive access_token()). Se a ordem regredir, este
+        # teste explode local e alto (IndexError na fila) em vez de vazar uma chamada HTTPS
+        # real para a Zoho com credenciais falsas.
+        self.rede()
         codigo, saida = self.executar(
             "query", "--de", "2026/09/01", "--ate", "2026-10-01")
         self.assertEqual(codigo, 1)

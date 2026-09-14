@@ -63,6 +63,13 @@ O campo é `created_time` (ou `resolved_time`, `due_by_time` — mesma mecânica
 ```
 Testado: devolveu `total_count: 93`, todos os chamados realmente de setembro/2026.
 
+> **Nota pós-implementação (2026-09-14):** os dois valores acima são meia-noite em **UTC**
+> (`1756684800000` = 2025-09-01T00:00:00Z). Na revisão final desta fatia, o Fábio pediu que a
+> fronteira do filtro fosse meia-noite em **horário de Brasília** (UTC-3 fixo) em vez de UTC,
+> para que "setembro" no arquivo bata com "setembro" no calendário de quem pediu —
+> `_data_para_ms` no código usa essa fronteira, não a desta seção. O *mecanismo* do `between`
+> (validado aqui) continua o mesmo; só os valores numéricos mudam.
+
 **NÃO funciona** — duas condições encadeadas com `logical_operator: "AND"` (`greater than` +
 `less than`), a forma que a documentação sugere como alternativa e que pareceria mais óbvia de
 implementar:

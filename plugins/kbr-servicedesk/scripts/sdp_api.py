@@ -283,7 +283,7 @@ STATUS_FINAIS = ["Resolved", "Closed", "Canceled"]
 # vazava 335 chamados cancelados como se fossem "abertos" (total_count 517 vs 182 reais).
 # Se um dia o SDP usar as duas grafias ao mesmo tempo, listar as duas aqui.
 
-FUSO_BRASILIA = timezone(timedelta(hours=-3), name="America/Sao_Paulo")
+FUSO_BRASILIA = timezone(timedelta(hours=-3), name="UTC-03:00")
 # UTC-3 fixo: o Brasil não usa mais horário de verão desde 2019, então não há transição
 # sazonal para tratar. Deliberadamente NÃO usamos zoneinfo.ZoneInfo aqui — no Windows, sem
 # o banco de dados IANA instalado pelo SO, isso exigiria "pip install tzdata", violando a
