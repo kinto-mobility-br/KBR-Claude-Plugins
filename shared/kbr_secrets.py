@@ -137,8 +137,8 @@ def _partes_op(referencia: str, nome: str) -> tuple[str, str, str]:
     partes = referencia[len(PREFIXO_OP):].split("/")
     if len(partes) != 3 or not all(parte.strip() for parte in partes):
         raise SegredoInacessivel(
-            nome, f"referência mal formada (esperado op://cofre/item/campo)")
-    return partes[0], partes[1], partes[2]
+            nome, "referência mal formada (esperado op://cofre/item/campo)")
+    return partes[0].strip(), partes[1].strip(), partes[2].strip()
 
 
 def _motivo_da_falha(processo) -> str:
@@ -146,17 +146,23 @@ def _motivo_da_falha(processo) -> str:
     return linhas[0] if linhas else f"o comando op saiu com código {processo.returncode}"
 
 
-def _resolver_op(referencia: str, nome: str) -> str:
-    if referencia in _cache_op:
-        return _cache_op[referencia]
-    _partes_op(referencia, nome)  # valida o formato antes de chamar o op
+def _executar_op(argumentos: list[str], nome: str):
+    """Chama o 1Password CLI e traduz as duas falhas possíveis. Devolve o processo."""
     try:
-        processo = _rodar_op(["read", referencia])
+        processo = _rodar_op(argumentos)
     except FileNotFoundError:
         raise SegredoInacessivel(
             nome, "o comando 'op' não está instalado ou não está no PATH") from None
     if processo.returncode != 0:
         raise SegredoInacessivel(nome, _motivo_da_falha(processo))
+    return processo
+
+
+def _resolver_op(referencia: str, nome: str) -> str:
+    if referencia in _cache_op:
+        return _cache_op[referencia]
+    _partes_op(referencia, nome)  # valida o formato antes de chamar o op
+    processo = _executar_op(["read", referencia], nome)
     valor = (processo.stdout or "").strip()
     if not valor:
         raise SegredoInacessivel(nome, "o 1Password devolveu um valor vazio")
@@ -179,13 +185,7 @@ def gravar(nome: str, valor: str) -> None:
 
 def _gravar_op(referencia: str, valor: str, nome: str) -> None:
     cofre, item, campo = _partes_op(referencia, nome)
-    try:
-        processo = _rodar_op(["item", "edit", item, "--vault", cofre, f"{campo}={valor}"])
-    except FileNotFoundError:
-        raise SegredoInacessivel(
-            nome, "o comando 'op' não está instalado ou não está no PATH") from None
-    if processo.returncode != 0:
-        raise SegredoInacessivel(nome, _motivo_da_falha(processo))
+    _executar_op(["item", "edit", item, "--vault", cofre, f"{campo}={valor}"], nome)
 
 
 def _gravar_arquivo(nome: str, valor: str) -> None:

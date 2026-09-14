@@ -206,6 +206,27 @@ class TesteOnePassword(BaseTemporaria):
         self.assertIn("op://Cofre/Item/campo", texto)
         self.assertNotIn("token-novo", texto)
 
+    def test_referencia_com_espacos_e_normalizada(self):
+        self.escrever("SDP_CLIENT_ID=op:// Cofre / Item /campo\n")
+        falso = OpFalso(saida="valor\n")
+        kbr_secrets._rodar_op = falso
+        kbr_secrets.obter("SDP_CLIENT_ID")
+        # a referência chega ao `op read` como veio; o que importa é que as partes
+        # extraídas para o `op item edit` não carreguem espaço
+        self.assertEqual(kbr_secrets._partes_op("op:// Cofre / Item /campo", "X"),
+                         ("Cofre", "Item", "campo"))
+
+    def test_op_disponivel_reflete_o_path(self):
+        import shutil
+        original = shutil.which
+        try:
+            shutil.which = lambda nome: "/usr/bin/op" if nome == "op" else None
+            self.assertTrue(kbr_secrets.op_disponivel())
+            shutil.which = lambda nome: None
+            self.assertFalse(kbr_secrets.op_disponivel())
+        finally:
+            shutil.which = original
+
 
 if __name__ == "__main__":
     unittest.main()
