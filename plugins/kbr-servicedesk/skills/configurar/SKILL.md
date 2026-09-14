@@ -1,6 +1,6 @@
 ---
 name: configurar
-description: Wizard passo a passo que configura o acesso de uma pessoa ao ServiceDesk Plus da KINTO — cria o Self Client na Zoho, guarda as credenciais no arquivo de segredos e testa a conexão. Escrito para quem nunca ouviu falar de OAuth, terminal ou Python. Use quando o usuário pedir "configurar o ServiceDesk", "não consigo acessar os chamados", disser que apareceu um erro de credencial ou autenticação, escolher a opção 6 do gestor de chamados, ou quando qualquer comando do ServiceDesk reclamar de credencial ausente, inválida ou revogada.
+description: Passo a passo que ensina uma pessoa a criar as próprias chaves de acesso ao ServiceDesk Plus da KINTO — o Self Client na Zoho, o Client ID, o Client Secret e o acesso permanente — guardando tudo no arquivo de segredos e testando a conexão no fim. Escrito para quem nunca ouviu falar de OAuth, terminal ou Python, e com uma visão geral para quem quer só entender antes de começar. Use quando o usuário pedir "configurar o ServiceDesk", "como eu crio as chaves", "como gero o Client ID e o Client Secret", "como consigo acesso à API do ServiceDesk", "não consigo acessar os chamados", "me explica como configurar o acesso", disser que apareceu um erro de credencial ou autenticação, escolher a opção 6 do gestor de chamados, ou quando qualquer comando do ServiceDesk reclamar de credencial ausente, inválida ou revogada.
 ---
 
 # Wizard — configurar o acesso ao ServiceDesk
@@ -61,6 +61,43 @@ Formatos de saída são diferentes entre os dois scripts:
 - `kbr_secrets.py` imprime **texto simples**, uma linha por informação (não é JSON). `status`
   sai com código 1 sempre que alguma chave ainda está vazia ou a proteção está ausente — isso é
   **normal** até o Passo 8, não é um erro para reagir. O que importa é ler o texto.
+
+---
+
+## Visão geral — para quem quer só entender antes de começar
+
+Se a pessoa pediu para **entender primeiro**, ou chegou pela opção "só me explique" do gestor
+de chamados, apresente esta visão geral e **pare aí**. Não comece o passo 1. Termine
+perguntando se ela quer começar agora ou depois.
+
+Diga, nestas palavras ou parecidas:
+
+> Você vai criar uma **chave de acesso individual** para o ServiceDesk — uma espécie de
+> crachá que serve só para programas, diferente da sua senha. Ela fica guardada num arquivo
+> seu, nesta máquina, e pode ser cancelada a qualquer momento sem afetar mais ninguém.
+>
+> São 8 passos e leva uns 15 minutos. Você vai precisar de: o navegador, o Bloco de Notas e o
+> mesmo login que usa no ServiceDesk.
+>
+> | Passo | O que acontece | Quem faz |
+> |---|---|---|
+> | 1 | Confiro se a máquina tem o que precisa | eu |
+> | 2 | Explico o que é cada coisa | eu |
+> | 3 | Crio o arquivo onde a chave vai morar | eu |
+> | 4 | Você cria a chave no site da Zoho e cola duas linhas no Bloco de Notas | você |
+> | 5 | Você gera um código temporário e cola no mesmo lugar | você |
+> | 6 | Troco esse código por um acesso que não expira | eu |
+> | 7 | Você me diz seu nome e e-mail, e eu testo a conexão | os dois |
+> | 8 | Ligo a proteção do arquivo e fecho | eu |
+>
+> Duas coisas que valem saber antes:
+>
+> - **Nada secreto é digitado aqui na conversa.** As partes secretas você cola direto no Bloco
+>   de Notas, que eu abro para você.
+> - **Dá para parar no meio.** Se sair, é só chamar de novo que eu retomo de onde parou.
+
+Se ela disser que quer começar, siga para o passo 1. Se disser que depois, diga que
+`/kbr-servicedesk:configurar` recomeça quando ela quiser, e encerre sem insistir.
 
 ---
 

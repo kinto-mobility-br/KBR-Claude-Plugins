@@ -1,6 +1,6 @@
 ---
 name: sdp
-description: Painel conversacional dos chamados do ServiceDesk Plus da KINTO — lista os seus chamados, mostra o detalhe de um, adiciona nota, muda status e resolve, sempre com confirmação antes de gravar. Use quando o usuário pedir "meus chamados", "abrir o ServiceDesk", "ver o chamado 4942", "responder o solicitante", "resolver o chamado", "SDP", ou invocar /kbr-servicedesk:sdp.
+description: Painel conversacional dos chamados do ServiceDesk Plus da KINTO — lista os seus chamados, mostra o detalhe de um, adiciona nota, muda status e resolve, sempre com confirmação antes de gravar, e leva ao passo a passo de criar as próprias chaves de acesso quando ainda não há credencial. Use quando o usuário pedir "meus chamados", "abrir o ServiceDesk", "ver o chamado 4942", "responder o solicitante", "resolver o chamado", "SDP", "preciso de acesso ao ServiceDesk", ou invocar /kbr-servicedesk:sdp.
 ---
 
 # Gestor de chamados — ServiceDesk KINTO
@@ -59,9 +59,13 @@ vá direto para o passo 6.
 
 1. Meus chamados abertos          4. Mudar status de um chamado
 2. Ver detalhe de um chamado      5. Resolver chamado
-3. Adicionar nota a um chamado    6. Configurar acesso ao ServiceDesk
+3. Adicionar nota a um chamado    6. Criar meu acesso ao ServiceDesk (passo a passo)
 0. Sair
 ```
+
+A opção 6 é onde a pessoa **cria as próprias chaves** — o Client ID, o Client Secret e o
+acesso permanente. Chame-a assim, com essas palavras, e não de "configuração": quem nunca
+fez isso não sabe que "configurar" quer dizer criar uma credencial.
 
 Se `testar` devolver `truncado: true`, troque "chamados abertos: <N>" por "chamados abertos:
 pelo menos <N>" no cabeçalho.
@@ -84,7 +88,20 @@ pelo menos <N>" no cabeçalho.
    e o script recusar por falta de comentário, siga a mesma regra: peça o motivo e repita com
    `--comentario`. Confirme e envie.
 5. **Resolver** — peça o texto de conclusão, redija o HTML, simule, mostre, confirme, envie.
-6. **Configurar** — invoque a skill `configurar` deste mesmo plugin.
+6. **Criar o acesso** — invoque a skill `configurar` deste mesmo plugin. Antes de invocar,
+   ofereça as duas portas, porque nem todo mundo quer começar agora:
+
+   ```
+   a. Só me explique o que vou ter que fazer
+   b. Vamos fazer agora, passo a passo
+   ```
+
+   - **a** — a skill `configurar` tem uma seção de visão geral. Invoque-a e peça a visão
+     geral, sem iniciar os passos. A pessoa lê, decide, e volta quando quiser.
+   - **b** — invoque a skill e comece do passo 1.
+
+   Se a pessoa não escolher, trate como **b**. Quem chegou aqui por causa de um erro de
+   credencial quer resolver, não estudar.
 
 ## Como escrever nota e conclusão
 
