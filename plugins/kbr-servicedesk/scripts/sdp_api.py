@@ -8,6 +8,7 @@ Nenhuma operação de escrita acontece sem a flag --confirmar.
 from __future__ import annotations
 
 import argparse
+import csv
 import html as _html
 import json
 import re
@@ -439,6 +440,37 @@ def _buscar_chamados(token: str, status_pedido: str | None,
 CAMPOS_QUERY = ["id", "display_id", "subject", "status", "requester", "technician",
                "group", "category", "subcategory", "urgency", "priority",
                "created_time", "resolved_time"]
+
+
+COLUNAS_QUERY = ["numero", "assunto", "solicitante", "tecnico", "grupo", "categoria",
+                 "subcategoria", "status", "urgencia", "prioridade", "criado_em",
+                 "resolvido_em"]
+
+
+def _resumir_query(bruto: dict) -> dict:
+    return {
+        "numero": str(bruto.get("display_id") or ""),
+        "assunto": bruto.get("subject"),
+        "solicitante": campo(bruto, "requester", "name"),
+        "tecnico": campo(bruto, "technician", "name"),
+        "grupo": campo(bruto, "group", "name"),
+        "categoria": campo(bruto, "category", "name"),
+        "subcategoria": campo(bruto, "subcategory", "name"),
+        "status": campo(bruto, "status", "name"),
+        "urgencia": campo(bruto, "urgency", "name"),
+        "prioridade": campo(bruto, "priority", "name"),
+        "criado_em": campo(bruto, "created_time", "display_value"),
+        "resolvido_em": campo(bruto, "resolved_time", "display_value"),
+    }
+
+
+def _escrever_csv(caminho: Path, chamados: list[dict]) -> None:
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    with caminho.open("w", newline="", encoding="utf-8") as arquivo:
+        escritor = csv.DictWriter(arquivo, fieldnames=COLUNAS_QUERY)
+        escritor.writeheader()
+        for bruto in chamados:
+            escritor.writerow(_resumir_query(bruto))
 
 
 def _buscar_query(token: str, de_ms: str | None, ate_ms: str | None, campo_data: str,

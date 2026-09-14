@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Testes do acesso à API do ServiceDesk Plus."""
 import contextlib
+import csv
 import io
 import json
 import os
@@ -917,6 +918,71 @@ class TesteBuscarQuery(BaseSDP):
         self.assertTrue(truncado)
         self.assertEqual(len(chamados), sdp_api.LIMITE_PAGINAS)
         self.assertEqual(len(rede.chamadas), sdp_api.LIMITE_PAGINAS)
+
+
+class TesteResumirQuery(unittest.TestCase):
+    def test_mapeia_todas_as_colunas(self):
+        resumo = sdp_api._resumir_query(CHAMADO_QUERY["requests"][0])
+        self.assertEqual(resumo, {
+            "numero": "5001",
+            "assunto": "Erro ao gerar nota fiscal",
+            "solicitante": "Ciclana",
+            "tecnico": "Fulano de Tal",
+            "grupo": "Financeiro",
+            "categoria": "Sistemas",
+            "subcategoria": "Faturamento",
+            "status": "Closed",
+            "urgencia": "Alta",
+            "prioridade": "Alta",
+            "criado_em": "Sep 1, 2025 08:00 AM",
+            "resolvido_em": "Sep 5, 2025 09:00 AM",
+        })
+
+    def test_nao_expoe_id_interno(self):
+        resumo = sdp_api._resumir_query(CHAMADO_QUERY["requests"][0])
+        self.assertNotIn("id", resumo)
+        self.assertNotIn("173861000000000099", json.dumps(resumo))
+
+    def test_campo_ausente_vira_none_sem_estourar(self):
+        # priority ausente é um caso real, visto ao vivo (spec, seção 2.4): não pode
+        # estourar KeyError/AttributeError, tem que virar coluna vazia no CSV.
+        bruto = {k: v for k, v in CHAMADO_QUERY["requests"][0].items() if k != "priority"}
+        resumo = sdp_api._resumir_query(bruto)
+        self.assertIsNone(resumo["prioridade"])
+
+
+class TesteEscreverCsv(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_escreve_cabecalho_e_uma_linha_por_chamado(self):
+        caminho = Path(self.tmp.name) / "saida.csv"
+        sdp_api._escrever_csv(caminho, CHAMADO_QUERY["requests"])
+        with caminho.open(encoding="utf-8", newline="") as arquivo:
+            leitor = csv.reader(arquivo)
+            linhas = list(leitor)
+        self.assertEqual(linhas[0], sdp_api.COLUNAS_QUERY)
+        self.assertEqual(len(linhas), 2)
+        self.assertEqual(linhas[1][0], "5001")
+
+    def test_colunas_na_ordem_da_spec(self):
+        self.assertEqual(sdp_api.COLUNAS_QUERY, [
+            "numero", "assunto", "solicitante", "tecnico", "grupo", "categoria",
+            "subcategoria", "status", "urgencia", "prioridade", "criado_em", "resolvido_em"])
+
+    def test_id_interno_nunca_aparece_no_arquivo(self):
+        caminho = Path(self.tmp.name) / "saida.csv"
+        sdp_api._escrever_csv(caminho, CHAMADO_QUERY["requests"])
+        conteudo = caminho.read_text(encoding="utf-8")
+        self.assertNotIn("173861000000000099", conteudo)
+
+    def test_cria_a_pasta_se_nao_existir(self):
+        caminho = Path(self.tmp.name) / "subpasta" / "saida.csv"
+        sdp_api._escrever_csv(caminho, CHAMADO_QUERY["requests"])
+        self.assertTrue(caminho.is_file())
 
 
 if __name__ == "__main__":
