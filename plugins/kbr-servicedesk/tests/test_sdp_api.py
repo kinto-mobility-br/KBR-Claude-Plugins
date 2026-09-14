@@ -171,6 +171,22 @@ class TesteErros(unittest.TestCase):
                                           "access_token": "NAO-DEVE-APARECER"})
         self.assertNotIn("NAO-DEVE-APARECER", texto)
 
+    def test_response_status_com_tipo_inesperado_nao_quebra(self):
+        # response_status não é dict: não pode lançar AttributeError.
+        texto = sdp_api.traduzir("sdp", {"response_status": "formato inesperado"}, http=400)
+        self.assertIsInstance(texto, str)
+
+    def test_messages_com_item_que_nao_e_dict_nao_quebra(self):
+        # um item da lista messages não é dict: não pode lançar AttributeError.
+        texto = sdp_api.traduzir(
+            "sdp", {"response_status": {"messages": [123, None, "str"]}}, http=400)
+        self.assertIsInstance(texto, str)
+
+    def test_erro_da_zoho_aninhado_nao_vaza_estrutura(self):
+        # corpo["error"] vindo como dict (em vez de string curta) não pode ser ecoado.
+        texto = sdp_api.traduzir("zoho", {"error": {"vazou": "NAO-DEVE-APARECER"}})
+        self.assertNotIn("NAO-DEVE-APARECER", texto)
+
 
 if __name__ == "__main__":
     unittest.main()
