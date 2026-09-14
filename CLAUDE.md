@@ -18,6 +18,11 @@ Design aprovado em `docs/superpowers/specs/2026-09-13-fundacao-servicedesk-desig
 - **Caminhos em skills sempre via `${CLAUDE_PLUGIN_ROOT}`.**
 - **Segredo nunca é impresso** por script nenhum, nem em mensagem de erro.
 - **Escrita no ServiceDesk só com `--confirmar`.**
+- **Cuidado com `: ` na `description` de um SKILL.md.** A frontmatter é YAML: dois-pontos
+  seguido de espaço dentro de um valor sem aspas quebra o parse, e o Claude Code carrega a
+  skill com metadados vazios — ela simplesmente nunca dispara, sem erro visível em lugar
+  nenhum. Prefira travessão. `claude plugin validate --strict` pega isso, e a CI roda esse
+  comando; rode antes de commitar.
 - **Nunca `git add -A`.** Nomeie os caminhos e confira `git status --short`.
 
 ## Comandos

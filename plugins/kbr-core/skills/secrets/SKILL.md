@@ -1,6 +1,6 @@
 ---
 name: secrets
-description: Gerencia o arquivo de segredos pessoal em ~/.kbr/secrets.env — cria, confere o que está preenchido, abre para edição e ativa a proteção contra leitura pelo modelo. Use quando o usuário pedir "configurar secrets", "configurar credenciais", "meus segredos", "status dos segredos", disser "não consigo acessar" algo que devia funcionar (causa comum: credencial ausente ou vencida), quando um plugin KINTO reclamar de credencial ausente, ou antes de qualquer tarefa que precise de token de API dos plugins KINTO.
+description: Gerencia o arquivo de segredos pessoal em ~/.kbr/secrets.env — cria, confere o que está preenchido, abre para edição e ativa a proteção contra leitura pelo modelo. Use quando o usuário pedir "configurar secrets", "configurar credenciais", "meus segredos", "status dos segredos", disser "não consigo acessar" algo que devia funcionar (causa comum — credencial ausente ou vencida), quando um plugin KINTO reclamar de credencial ausente, ou antes de qualquer tarefa que precise de token de API dos plugins KINTO.
 ---
 
 # Segredos dos plugins KINTO
