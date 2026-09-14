@@ -101,9 +101,10 @@ saida:        pasta                    # onde os conjuntos de documentos nascem
 - **Um arquivo por projeto, na raiz.** Ele é a fonte da verdade da identidade.
 - **Versione o `.docs-brand.yml`.** Ele é configuração de projeto, não segredo.
 - **O leitor é um subconjunto de YAML, não um parser completo.** Suporta mapeamentos
-  aninhados até 3 níveis, valores entre aspas duplas ou `true`/`false`, comentários com `#`.
-  Não suporta lista, âncora, bloco multilinha nem aspas simples — se o arquivo tiver algo
-  assim (editado à mão fora do padrão que a skill gera), a geração pode ler o valor errado.
+  aninhados até 3 níveis, valores entre aspas duplas ou booleano (`true`/`yes`/`on` e
+  `false`/`no`/`off`, sem diferenciar maiúsculas), comentários com `#`. Não suporta lista,
+  âncora, bloco multilinha nem aspas simples — se o arquivo tiver algo assim (editado à mão
+  fora do padrão que a skill gera), a geração pode ler o valor errado.
 
 ## Regras do padrão (não negociáveis)
 

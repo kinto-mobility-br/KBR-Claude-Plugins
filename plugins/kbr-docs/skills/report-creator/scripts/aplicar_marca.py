@@ -59,8 +59,9 @@ def _valor_escalar(bruto: str):
 def carregar_yaml_simples(texto: str) -> dict:
     """
     Lê o subconjunto de YAML que `.docs-brand.yml` usa: mapeamentos aninhados até 3
-    níveis, indentação de 2 espaços, valores entre aspas duplas ou `true`/`false`,
-    comentários com `#` (linha inteira ou à direita do valor, fora de aspas).
+    níveis, indentação de 2 espaços, valores entre aspas duplas ou booleano (`true`/
+    `yes`/`on` e `false`/`no`/`off`, sem diferenciar maiúsculas), comentários com `#`
+    (linha inteira ou à direita do valor, fora de aspas).
 
     Deliberadamente NÃO é um parser de YAML geral — feito para não exigir PyYAML (e
     portanto nenhum `pip install`) de quem usa o plugin. Não suporta lista, âncora,

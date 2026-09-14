@@ -60,6 +60,14 @@ marca:
                 f'tipografia:\n  fontes_externas: {texto_falso}\n')
             self.assertIs(cfg["tipografia"]["fontes_externas"], False, texto_falso)
 
+    def test_aspas_vencem_a_interpretacao_como_booleano(self):
+        # "true"/"no" citados são texto, não booleano — precisa continuar assim mesmo
+        # se _valor_escalar for mexido de novo no futuro (ex.: para aceitar mais formas
+        # de booleano sem aspas).
+        cfg = aplicar_marca.carregar_yaml_simples('projeto:\n  nome: "true"\n')
+        self.assertIsInstance(cfg["projeto"]["nome"], str)
+        self.assertEqual(cfg["projeto"]["nome"], "true")
+
     def test_le_arquivo_com_bom_sem_perder_a_primeira_chave(self):
         with tempfile.TemporaryDirectory() as pasta:
             caminho = Path(pasta) / ".docs-brand.yml"
