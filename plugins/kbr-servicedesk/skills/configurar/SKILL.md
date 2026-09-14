@@ -1,375 +1,547 @@
 ---
 name: configurar
-description: Passo a passo que ensina uma pessoa a criar as próprias chaves de acesso ao ServiceDesk Plus da KINTO — o Self Client na Zoho, o Client ID, o Client Secret e o acesso permanente — guardando tudo no arquivo de segredos e testando a conexão no fim. Escrito para quem nunca ouviu falar de OAuth, terminal ou Python, e com uma visão geral para quem quer só entender antes de começar. Use quando o usuário pedir "configurar o ServiceDesk", "como eu crio as chaves", "como gero o Client ID e o Client Secret", "como consigo acesso à API do ServiceDesk", "não consigo acessar os chamados", "me explica como configurar o acesso", disser que apareceu um erro de credencial ou autenticação, escolher a opção 6 do gestor de chamados, ou quando qualquer comando do ServiceDesk reclamar de credencial ausente, inválida ou revogada.
+description: Assistente guiado que ensina uma pessoa leiga a criar as próprias chaves de acesso ao ServiceDesk Plus da KINTO — o Self Client na Zoho, o Client ID, o Client Secret e o acesso permanente — em passos numerados e individuais, cada um com explicação, o comando exato e a opção de executar por ela ou deixar que ela mesma faça. Use quando o usuário pedir "configurar o ServiceDesk", "como eu crio as chaves", "como gero o Client ID e o Client Secret", "como consigo acesso à API do ServiceDesk", "não consigo acessar os chamados", "me explica como configurar o acesso", disser que apareceu um erro de credencial ou autenticação, escolher a opção 6 do gestor de chamados, ou quando qualquer comando do ServiceDesk reclamar de credencial ausente, inválida ou revogada.
 ---
 
-# Wizard — configurar o acesso ao ServiceDesk
+# Assistente — criar seu acesso ao ServiceDesk
 
 Quem está do outro lado **usa o ServiceDesk pelo navegador e nunca mexeu com OAuth, terminal ou
 Python**. Sabe abrir um site, copiar e colar, e abrir o Bloco de Notas. Escreva para essa pessoa.
 
-## Regras duras
+## Regras duras (não violar)
 
-- 🐢 **Um passo por turno.** Nunca despeje dois passos de uma vez.
+- 🔢 **Um passo por turno. Nunca dois.** Mesmo que dois sejam rápidos, mesmo que pareçam
+  óbvios juntos. A pessoa precisa ver uma coisa de cada vez.
+- 📋 **Todo passo é apresentado no formato padrão** descrito abaixo: número, status, por que
+  existe, o comando quando há um, e o menu de escolha. Nunca "pule" o formato por pressa.
+- 🚦 **O status vem da realidade, nunca da sua memória.** Antes de mostrar o painel, rode a
+  leitura de estado e derive de lá. A conversa pode ter sido interrompida ontem.
+- 🛑 **Nunca execute sem a pessoa escolher.** Mostre o comando, pergunte, espere. A única
+  exceção são as leituras de estado (`status`, `testar`, `--version`), que não mudam nada e
+  você roda quando precisar.
 - 🔒 **Nunca peça um segredo no chat.** Client ID, Client Secret e código de autorização vão
   **direto para o arquivo**, pelo editor. Se a pessoa colar um no chat mesmo assim: avise que
   aquele valor ficou registrado na conversa, e que o certo é **apagar o Self Client na Zoho e
   criar outro**. Não siga fingindo que não viu.
 - 🔑 **1Password é opt-in, nunca oferecido, e nunca para o código de autorização.** Só fale
-  nisso se a pessoa perguntar. Quando perguntar: `SDP_CLIENT_ID` e `SDP_CLIENT_SECRET` podem
-  virar uma referência `op://...` no arquivo. `SDP_GRANT_CODE` **nunca** — o passo 6 apaga esse
-  campo escrevendo um valor vazio por cima da linha, porque o código é de uso único; se a linha
-  fosse uma referência do 1Password, isso destruiria a referência em vez de só limpar o valor.
+  nisso se a pessoa perguntar. `SDP_CLIENT_ID` e `SDP_CLIENT_SECRET` podem virar referência
+  `op://...`. `SDP_GRANT_CODE` **nunca** — o passo 016 apaga esse campo escrevendo vazio por
+  cima da linha, e isso destruiria a referência em vez de só limpar o valor.
 - 🗣️ **Sem jargão sem explicar.** "OAuth", "Self Client", "Client ID", "refresh token" são os
-  nomes reais dos botões e campos no site da Zoho — use-os quando for apontar para a tela, mas
-  explique em uma frase simples na primeira vez ("chave de acesso individual", "código
-  temporário", "acesso que não expira"). Nunca jogue o termo sem contexto.
-- ✅ **Verifique cada passo antes de avançar.** Nunca diga "deve ter funcionado" — rode o
-  comando de verificação e leia o que ele devolveu.
-- 🔁 **Rodar de novo não estraga nada.** Ao iniciar, rode a verificação do Passo 1 e pule para o
-  primeiro passo pendente, avisando o que já estava pronto (tabela de retomada no Passo 1).
+  nomes reais dos botões no site da Zoho — use-os ao apontar para a tela, mas explique em uma
+  frase simples na primeira vez.
+- 📝 **Sem imagens.** Este assistente é todo textual e isso basta. Não prometa um guia
+  ilustrado. Em troca, descreva cada tela pelo que a pessoa vê: o nome exato do botão, onde ele
+  fica, o que muda depois de clicar. A sua descrição é o mapa.
 - 🇧🇷 Tudo em PT-BR, com acentuação correta.
 
-## O mini-menu
+## O formato de cada passo
 
-Cada turno termina assim:
+Todo passo é apresentado assim, sem exceção:
 
 ```
-1. Feito, próximo passo   2. Explicar de novo   3. Estou com erro   0. Sair (dá para voltar depois)
+Passo 007 — Ligar a proteção do arquivo   (🔴 não executado)
+
+Por quê: enquanto essa regra não existe, qualquer sessão do Claude Code pode
+abrir o arquivo e mostrar o conteúdo. Ligando agora, antes de você colar a
+primeira senha, o arquivo nasce protegido.
+
+Comando:
+    python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" proteger
+
+Deseja que eu execute para você?
+  1. Sim, pode executar
+  2. Não, eu mesmo faço
+  3. Voltar ao passo anterior
+  4. Ver o painel de todos os passos
 ```
 
-- **2** — reescreva o passo de outro jeito, mais devagar, com outra analogia.
-- **3** — abra o diagnóstico do passo atual (tabela no fim desta skill) e **volte ao mesmo passo**.
-- **0** — diga onde parou e que `/kbr-servicedesk:configurar` retoma daqui.
+Regras do formato:
 
-## Comandos
+- **Número com três dígitos**, sempre. `Passo 007`, não `Passo 7`.
+- **Status entre parênteses** logo depois do título, com o emoji.
+- **"Por quê"** em uma ou duas frases, na língua da pessoa. Nunca pule — é o que transforma
+  um ritual em algo compreensível.
+- **"Comando"** só aparece quando existe um. Passos que só a pessoa pode fazer (mexer no site
+  da Zoho) não têm comando, e o menu muda — veja abaixo.
+- Se a pessoa escolher **2**, mostre o comando de novo num bloco fácil de copiar, diga onde
+  colar, e espere ela avisar que rodou.
+- Se escolher **3**, volte ao passo anterior e apresente-o de novo por inteiro.
+- Se escolher **4**, mostre o painel e volte ao passo atual.
 
-Os dois scripts vivem dentro **deste mesmo plugin** — o wizard nunca precisa ler nem executar
-nada de dentro da pasta de outro plugin:
+### Menu dos passos que só a pessoa pode fazer
+
+Passos no site da Zoho e no Bloco de Notas não têm comando para eu rodar. Nesses, o menu é:
+
+```
+  1. Feito, próximo passo
+  2. Explicar de novo, mais devagar
+  3. Estou com erro
+  4. Ver o painel de todos os passos
+  0. Parar por aqui (dá para voltar depois)
+```
+
+Em **3**, consulte a tabela de diagnóstico no fim e **volte ao mesmo passo**.
+Em **0**, diga em que passo parou e que `/kbr-servicedesk:configurar` retoma daí.
+
+## Os status
+
+| Emoji | Significa |
+|---|---|
+| 🔴 | não executado |
+| 🟢 | concluído |
+| ⏳ | esperando você fazer algo fora daqui |
+| ⚪ | não se aplica (a pessoa recusou, e seguir é aceitável) |
+
+## Como ler o estado real
+
+Antes de montar o painel, ou sempre que precisar saber onde está, rode estas duas leituras.
+Elas não mudam nada, então **não peça permissão**:
 
 ```bash
-# segredos — kbr_secrets.py vendorizado aqui, cópia idêntica ao do kbr-core
+python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" status --plugin kbr-servicedesk
+python "${CLAUDE_PLUGIN_ROOT}/scripts/sdp_api.py" testar
+```
+
+Derive assim:
+
+| O que você vê | Conclusão |
+|---|---|
+| "o arquivo de segredos ainda não existe" | 005 pendente; tudo dali em diante 🔴 |
+| Arquivo existe, nenhuma chave `SDP_*` listada | 005 🟢, 006 pendente |
+| Chaves listadas, "proteção ... ausente" | 006 🟢, 007 pendente |
+| "proteção ... ativa" | 007 🟢 |
+| `SDP_CLIENT_ID` e `SDP_CLIENT_SECRET` preenchidas | 008 a 011 🟢 |
+| `SDP_GRANT_CODE` preenchida | 012 a 015 🟢 |
+| `SDP_REFRESH_TOKEN` preenchida e `SDP_GRANT_CODE` vazia | 016 🟢 |
+| `testar` responde com o nome do técnico | 017 e 018 🟢 |
+| `testar` diz "Ainda não sei quem é o técnico" | 017 pendente |
+
+Os passos 001 a 004 não deixam rastro no disco. Se a pessoa está chegando agora, comece do 001.
+Se ela está retomando e o arquivo já existe, marque-os 🟢 e diga isso.
+
+## O painel
+
+Mostre no início, quando a pessoa pedir, e no encerramento:
+
+```
+📋 CRIAR MEU ACESSO AO SERVICEDESK — 19 passos
+
+   Preparação
+   001  🟢  Conferir o Python
+   002  🟢  Conferir que o Claude Code foi reaberto
+   003  🟢  Conferir o acesso ao portal do ServiceDesk
+   004  🟢  Entender o que vai acontecer
+
+   Arquivo e proteção
+   005  🟢  Criar a pasta e o arquivo de segredos
+   006  🟢  Registrar as quatro chaves do ServiceDesk
+   007  🔴  Ligar a proteção do arquivo          ← você está aqui
+
+   Criar a chave na Zoho
+   008  🔴  Abrir o console da Zoho e entrar
+   009  🔴  Criar o Self Client
+   010  🔴  Copiar Client ID e Client Secret para o arquivo
+   011  🔴  Conferir que as duas chaves entraram
+
+   Autorizar
+   012  🔴  Copiar a lista de permissões
+   013  🔴  Gerar o código temporário na Zoho
+   014  🔴  Colar o código no arquivo
+   015  🔴  Conferir que o código entrou
+   016  🔴  Trocar o código pelo acesso permanente
+
+   Identificação e teste
+   017  🔴  Informar seu nome e e-mail
+   018  🔴  Testar a conexão
+   019  🔴  Conferir a proteção e encerrar
+```
+
+## Comandos disponíveis
+
+Os dois scripts vivem **dentro deste mesmo plugin**:
+
+```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" <init|registrar|status|editar|proteger>
-# API do ServiceDesk — deste plugin
 python "${CLAUDE_PLUGIN_ROOT}/scripts/sdp_api.py" <escopos|autorizar|testar>
 ```
 
-Formatos de saída são diferentes entre os dois scripts:
+Os formatos de saída diferem:
 
-- `sdp_api.py` sempre imprime **JSON**. Erro vem como `{"erro": "..."}` e a saída sai 1 —
-  **mostre esse texto como veio**, ele já foi escrito em PT-BR para esta pessoa, nunca reescreva.
-- `kbr_secrets.py` imprime **texto simples**, uma linha por informação (não é JSON). `status`
-  sai com código 1 sempre que alguma chave ainda está vazia ou a proteção está ausente — isso é
-  **normal enquanto o wizard está em andamento**, não é um erro para reagir: as chaves só ficam
-  todas preenchidas no Passo 6. O que importa é ler o texto, não o código de saída.
+- `sdp_api.py` sempre imprime **JSON**. Erro vem como `{"erro": "..."}` com saída 1 — **mostre
+  esse texto como veio**, ele já foi escrito em PT-BR para esta pessoa. Nunca reescreva.
+- `kbr_secrets.py` imprime **texto simples**. O `status` sai com código 1 enquanto faltar
+  alguma chave — isso é **normal** durante todo o processo, não é erro. Leia o texto, ignore o
+  código de saída.
 
 ---
 
 ## 🗺️ Visão geral — para quem quer só entender antes de começar
 
-Se a pessoa pediu para **entender primeiro**, ou chegou pela opção "só me explique" do gestor
-de chamados, apresente esta visão geral e **pare aí**. Não comece o passo 1. Termine
-perguntando se ela quer começar agora ou depois.
+Se a pessoa pediu para **entender primeiro**, apresente isto e **pare**. Não comece o passo 001.
+Termine perguntando se ela quer começar agora ou depois.
 
-Diga, nestas palavras ou parecidas:
-
-> Você vai criar uma **chave de acesso individual** para o ServiceDesk — uma espécie de
-> crachá que serve só para programas, diferente da sua senha. Ela fica guardada num arquivo
-> seu, nesta máquina, e pode ser cancelada a qualquer momento sem afetar mais ninguém.
+> Você vai criar uma **chave de acesso individual** para o ServiceDesk — uma espécie de crachá
+> que serve só para programas, diferente da sua senha. Ela fica guardada num arquivo seu, nesta
+> máquina, e pode ser cancelada a qualquer momento sem afetar mais ninguém.
 >
-> São 8 passos e leva uns 15 minutos. Você vai precisar de: o navegador, o Bloco de Notas e o
-> mesmo login que usa no ServiceDesk.
+> São **19 passos pequenos**, uns 15 minutos no total. A maioria eu executo para você; em seis
+> deles você mexe no site da Zoho ou no Bloco de Notas. Em cada passo eu explico por que ele
+> existe, mostro o comando, e pergunto se você quer que eu execute ou prefere fazer você mesmo.
 >
-> | Passo | O que acontece | Quem faz |
+> | Etapa | Passos | Quem faz |
 > |---|---|---|
-> | 1 | Confiro se a máquina tem o que precisa | eu |
-> | 2 | Explico o que é cada coisa | eu |
-> | 3 | Crio o arquivo onde a chave vai morar e **tranco antes de você colar nada** | eu |
-> | 4 | Você cria a chave no site da Zoho e cola duas linhas no Bloco de Notas | você |
-> | 5 | Você gera um código temporário e cola no mesmo lugar | você |
-> | 6 | Troco esse código por um acesso que não expira | eu |
-> | 7 | Você me diz seu nome e e-mail, e eu testo a conexão | os dois |
-> | 8 | Confiro que a proteção continua de pé e fecho | eu |
+> | Preparação | 001 a 004 | eu confiro, você responde duas perguntas |
+> | Arquivo e proteção | 005 a 007 | eu |
+> | Criar a chave na Zoho | 008 a 011 | você, no navegador |
+> | Autorizar | 012 a 016 | você gera o código, eu troco pelo acesso |
+> | Identificação e teste | 017 a 019 | você informa o nome, eu testo |
 >
-> Duas coisas que valem saber antes:
+> Três coisas que valem saber antes:
 >
-> - **Nada secreto é digitado aqui na conversa.** As partes secretas você cola direto no Bloco
->   de Notas, que eu abro para você.
-> - **Dá para parar no meio.** Se sair, é só chamar de novo que eu retomo de onde parou.
-
-Se ela disser que quer começar, siga para o passo 1. Se disser que depois, diga que
-`/kbr-servicedesk:configurar` recomeça quando ela quiser, e encerre sem insistir.
+> - **Nada secreto é digitado nesta conversa.** As partes secretas você cola direto no Bloco de
+>   Notas, que eu abro para você.
+> - **Nada é executado sem você autorizar.** Em cada passo com comando, você escolhe se eu rodo
+>   ou se você mesmo faz.
+> - **Dá para parar em qualquer ponto.** Se sair, é só chamar de novo que eu retomo do passo
+>   onde você estava.
 
 ---
 
-## 🔎 Passo 1 — Ver se a máquina está pronta, e por onde retomar
+# Fase 1 — Preparação
 
-**Diga:** antes de tudo vou conferir se o computador tem o que precisa. Isso é rápido e você
-não faz nada agora.
+## Passo 001 — Conferir o Python
 
-🔁 **Primeiro, uma pergunta que evita um problema silencioso:** "você instalou o plugin agora,
-nesta mesma sessão, ou já reabriu o Claude Code depois de instalar?"
+**Por quê:** os programas que guardam sua chave e falam com o ServiceDesk são escritos em
+Python. Sem ele instalado, nada daqui para a frente funciona.
 
-A proteção do arquivo de segredos é feita por um hook, e **hook só entra quando a sessão
-começa**. Quem instalou e não reabriu está sem essa camada, e não há aviso nenhum na tela
-dizendo isso.
+**Execute** (é leitura, não precisa pedir permissão): `python --version`
 
-- **Instalou agora e não reabriu:** peça para **fechar e reabrir o Claude Code** e chamar
-  `/kbr-servicedesk:configurar` de novo. Diga por quê, em uma frase — a proteção do arquivo só
-  vale a partir da próxima sessão, e é melhor tê-la antes de guardar a primeira senha. **Pare
-  aqui**; não siga para o passo 2.
-- **Já reabriu, ou não tem certeza mas a sessão é de hoje cedo:** siga.
+- **3.10 ou maior:** marque 🟢 e vá ao 002.
+- **Ausente ou menor:** marque 🔴 e **pare aqui**. Explique que dá para instalar pela Microsoft
+  Store — procure por "Python 3.12" e clique em Obter — e que depois é preciso **fechar e
+  reabrir o Claude Code** para ele enxergar. Ofereça o menu de passo manual.
 
-Na dúvida, prefira pedir para reabrir. Custa trinta segundos e fecha a única janela em que o
-arquivo ficaria desprotegido.
+## Passo 002 — Conferir que o Claude Code foi reaberto depois de instalar o plugin
 
-**Execute:**
-```bash
-python --version
-python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" status --plugin kbr-servicedesk
-```
+**Por quê:** a proteção do arquivo de segredos é feita por um hook, e hook só entra em vigor
+quando a sessão começa. Quem instalou o plugin e continuou na mesma janela está sem essa
+camada — e nada na tela avisa.
 
-- Python 3.10 ou maior: siga.
-- Python ausente ou antigo: **pare** e ensine a instalar pela Microsoft Store (procure
-  "Python 3.12", botão Obter). Depois peça para **fechar e reabrir o Claude Code** e rodar o
-  wizard de novo.
+**Pergunte:** "você instalou o plugin agora, nesta mesma sessão, ou já fechou e reabriu o
+Claude Code depois de instalar?"
 
-**Use a saída do `status` para decidir onde retomar** (leia o texto, não espere JSON):
+- **Já reabriu:** 🟢, siga.
+- **Instalou agora e não reabriu:** 🔴 e **pare**. Peça para fechar e reabrir, e chamar
+  `/kbr-servicedesk:configurar` de novo. Explique em uma frase: é melhor ter a proteção no
+  lugar antes de guardar a primeira senha. Custa trinta segundos.
+- **Não tem certeza:** trate como "não reabriu". Prefira sempre o lado seguro.
 
-| O que o `status` mostra | Retome no |
-|---|---|
-| "o arquivo de segredos ainda não existe" | Passo 2 (primeira vez, ainda não viu a explicação) |
-| Arquivo existe, mas nenhuma chave `SDP_*` aparece | Passo 3 |
-| `SDP_CLIENT_ID` ou `SDP_CLIENT_SECRET` vazia | Passo 4 |
-| As duas acima preenchidas, `SDP_GRANT_CODE` vazia | Passo 5 |
-| `SDP_GRANT_CODE` preenchida, `SDP_REFRESH_TOKEN` vazia | Passo 6 |
-| `SDP_REFRESH_TOKEN` preenchida | Passo 7 — mas confira o nome antes, logo abaixo |
-| Tudo preenchido e "proteção ... ativa" | Já está pronto — rode `testar` para confirmar e ofereça sair |
+## Passo 003 — Conferir o acesso ao portal do ServiceDesk
 
-O `status` só enxerga os segredos, nunca o nome do técnico. Quando o `SDP_REFRESH_TOKEN` já
-estiver preenchido, confira se o nome já foi gravado antes de repetir o Passo 7:
+**Por quê:** o site da Zoho, onde você vai criar a chave, pede o **mesmo login** do
+ServiceDesk. Se esse login não estiver funcionando, o processo trava no meio.
 
-```bash
-python "${CLAUDE_PLUGIN_ROOT}/scripts/sdp_api.py" testar
-```
+**Pergunte:** "você consegue entrar no portal do ServiceDesk pelo navegador agora, com seu
+login da KINTO?"
 
-- Respondeu com o nome do técnico: o Passo 7 já foi feito. **Vá direto ao Passo 8.**
-- Disse "Ainda não sei quem é o técnico": faça o Passo 7.
-- Qualquer outro erro: leve ao diagnóstico do Passo 7.
+- **Sim:** 🟢, siga.
+- **Não:** 🔴 e **pare**. Isso é problema de acesso, não deste assistente — oriente a procurar
+  a TI para liberar o login antes de continuar.
 
-Se algo já estava pronto, **diga isso antes de seguir** ("você já tinha o Client ID e o Client
-Secret gravados, vamos direto para gerar o código").
+## Passo 004 — Entender o que vai acontecer
 
-**Confirme também** que a pessoa consegue entrar no portal do ServiceDesk pelo navegador. Sem
-isso, nada adiante.
+**Por quê:** os próximos passos mexem em coisas com nomes estranhos. Cinco frases agora evitam
+quinze minutos de confusão depois.
 
-## 💡 Passo 2 — Entender o que vai acontecer
+**Sem comando.** Explique, nesta ordem:
 
-Sem comando nenhum. Explique, nessa ordem:
-
-1. O ServiceDesk exige uma **chave de acesso individual** para programas — é diferente da sua
-   senha, e serve só para esta máquina. O nome técnico dela é **OAuth**; você não precisa saber
-   o que isso significa, só que é assim que programas se identificam sem usar sua senha.
-2. Vamos criar essa chave no site da Zoho, que é a empresa que hospeda o ServiceDesk.
+1. O ServiceDesk exige uma **chave de acesso individual** para programas. É diferente da sua
+   senha e vale só para esta máquina. O nome técnico é **OAuth** — você não precisa saber o que
+   significa, só que é assim que um programa se identifica sem usar a sua senha.
+2. Vamos criar essa chave no site da **Zoho**, a empresa que hospeda o ServiceDesk.
 3. A chave fica guardada **num arquivo seu**, numa pasta protegida do seu usuário. Eu não
-   consigo ler esse arquivo; os programas leem por dentro.
-4. **Nada de secreto vai ser digitado aqui na conversa.** Você cola tudo no Bloco de Notas.
+   consigo abrir esse arquivo; os programas leem por dentro.
+4. **Nada secreto é digitado nesta conversa.** Você cola tudo no Bloco de Notas.
 5. Se um dia quiser cancelar, é só apagar a chave no site da Zoho. Não afeta mais ninguém.
 
-Pergunte se ficou claro antes de seguir.
+Pergunte se ficou claro. Se a pessoa tiver dúvida, responda antes de seguir.
 
-## 📄 Passo 3 — Criar o arquivo de segredos **e trancá-lo antes de ter o que guardar**
+---
 
-**Execute:**
+# Fase 2 — Arquivo e proteção
+
+## Passo 005 — Criar a pasta e o arquivo de segredos
+
+**Por quê:** é onde a sua chave vai morar. A pasta é criada com acesso restrito ao seu usuário
+do Windows, e fica fora de qualquer repositório — nunca vai parar num commit sem querer.
+
+**Comando:**
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" init
+```
+
+Rodar de novo não faz mal: se já existir, nada é apagado.
+
+**Menu de execução.** Depois de rodar, diga o que foi criado e siga ao 006.
+
+## Passo 006 — Registrar as quatro chaves do ServiceDesk
+
+**Por quê:** isso escreve no arquivo as quatro linhas que você vai preencher, já com o nome
+certo e vazias. Assim você não precisa lembrar como cada uma se chama.
+
+**Comando:**
+```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" registrar --plugin kbr-servicedesk --chaves SDP_CLIENT_ID,SDP_CLIENT_SECRET,SDP_GRANT_CODE,SDP_REFRESH_TOKEN
 ```
 
-Rodar de novo não faz mal: `registrar` só acrescenta o que falta e nunca toca em valor já
-preenchido.
+Só acrescenta o que falta; nunca toca em valor já preenchido.
 
-🔒 **Agora, antes de qualquer senha entrar no arquivo, ligue a proteção.** Este é o momento
-certo: a partir do passo 4 o arquivo passa a ter conteúdo de verdade, e trancar depois deixaria
-uma janela aberta justamente enquanto há o que proteger.
+**Menu de execução.** Depois, rode a leitura de estado e confirme que as quatro aparecem como
+vazias.
 
-**Pergunte**, com estas palavras ou parecidas:
+## Passo 007 — Ligar a proteção do arquivo
 
-> Antes de você colar qualquer coisa aqui, quero ligar uma proteção: uma regra que impede
-> qualquer sessão do Claude Code de abrir esse arquivo — inclusive eu. Os programas continuam
-> lendo por dentro, normalmente; o que fica barrado é alguém pedir para eu mostrar o conteúdo.
-> Posso ligar? (s/n)
+**Por quê:** enquanto essa regra não existe, qualquer sessão do Claude Code pode abrir o arquivo
+e mostrar o conteúdo. Ligando **agora**, antes de você colar a primeira senha, o arquivo nasce
+protegido. Ligar depois deixaria uma janela aberta justamente quando já há o que proteger.
 
-**Só depois do "sim":**
+Explique o que muda: os programas continuam lendo o arquivo por dentro, normalmente. O que fica
+barrado é alguém me pedir para mostrar o conteúdo — inclusive você.
+
+**Comando:**
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" proteger
 ```
 
-Se a pessoa disser não, **respeite e siga** — mas avise, em uma frase, que o arquivo vai ficar
-sem essa camada e que dá para ligar depois, no passo 8. Não insista mais de uma vez.
+**Menu de execução.** Se a pessoa recusar, marque ⚪, avise em uma frase que o arquivo fica sem
+essa camada e que o passo 019 oferece de novo. **Não insista.**
 
-**Confirme que entrou:** rode o `status` do fim deste passo e leia a linha da proteção. Se ela
-disser "ausente" mesmo depois do "sim", leve ao diagnóstico — não siga para o passo 4 achando
-que ficou protegido.
+Depois de rodar, confirme pela leitura de estado que a linha da proteção diz "ativa". Se disser
+"ausente" mesmo depois de executar, leve ao diagnóstico — não siga achando que ficou protegido.
 
-📝 **Este passo a passo é todo textual, e isso basta.** Não há guia com imagens, e você não
-deve prometer um. Em troca, descreva cada tela com o que a pessoa vê nela: o nome exato do
-botão, onde ele fica, e o que muda depois de clicar. Quem está do outro lado não tem uma
-figura para comparar — a sua descrição é o mapa.
+---
 
-**Verifique:**
-```bash
-python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" status --plugin kbr-servicedesk
-```
-deve listar as quatro chaves como vazias.
+# Fase 3 — Criar a chave na Zoho
 
-## 🔑 Passo 4 — Criar a chave no site da Zoho
+## Passo 008 — Abrir o console da Zoho e entrar
 
-**Diga o que fazer, nesta ordem, uma instrução por vez:**
+**Por quê:** é o site onde as chaves são criadas. Precisa ser o console **americano**: uma chave
+criada no console de outro país não funciona aqui, e o erro só aparece oito passos adiante.
 
-1. 🌐 Abra **https://api-console.zoho.com** e entre com o **mesmo login que você usa no
-   ServiceDesk**. Esse é o console **americano** — confira que o endereço termina em `.com`,
-   e não em `.eu` nem `.in`. Uma chave criada no console errado não funciona aqui, e o erro
-   só aparece dois passos adiante.
-2. 🔘 A página abre com uma lista de aplicativos, provavelmente vazia na primeira vez. Clique
-   em **ADD CLIENT**, no canto superior direito.
-3. 🧩 Aparecem cartões com os tipos de cliente. Escolha **Self Client** — em geral o terceiro,
-   descrito como para uso próprio, sem tela de login para outras pessoas. É o tipo certo
-   porque a chave é só sua e ninguém precisa aprovar nada. Confirme em **CREATE**.
-4. 📋 A tela mostra duas linhas longas de letras e números: **Client ID** e **Client Secret**.
-   Se o Secret aparecer escondido, há um ícone de olho ao lado para revelá-lo. Há também um
-   ícone de copiar em cada linha — use-o, é mais seguro que selecionar com o mouse.
+**Sem comando — este é seu.** Peça:
 
-**Execute:** `editar` — isso abre o arquivo no Bloco de Notas.
+> 🌐 Abra **https://api-console.zoho.com** e entre com o **mesmo login que você usa no
+> ServiceDesk**. Confira que o endereço termina em `.com`, e não em `.eu` nem `.in`.
+
+Depois de entrar, a página mostra uma lista de aplicativos, provavelmente vazia na primeira vez.
+
+**Menu de passo manual.**
+
+## Passo 009 — Criar o Self Client
+
+**Por quê:** "Self Client" é o tipo de chave feito para quem vai usá-la sozinho, sem tela de
+login para outras pessoas. É exatamente o seu caso.
+
+**Sem comando — este é seu.** Peça, uma instrução por vez:
+
+> 🔘 Clique em **ADD CLIENT**, no canto superior direito.
+>
+> 🧩 Aparecem cartões com os tipos de cliente. Escolha **Self Client** — em geral o terceiro,
+> descrito como para uso próprio. Confirme em **CREATE**.
+
+Ao final, a tela mostra duas linhas longas de letras e números: **Client ID** e **Client
+Secret**. Se o Secret aparecer escondido, há um ícone de olho ao lado para revelá-lo.
+
+⚠️ Avise: **deixe essa aba aberta**, ela é usada até o passo 013.
+
+**Menu de passo manual.**
+
+## Passo 010 — Copiar Client ID e Client Secret para o arquivo
+
+**Por quê:** essas duas linhas são a sua chave. Elas vão para o arquivo, nunca para esta
+conversa — o que é digitado aqui fica registrado no histórico.
+
+**Comando** (abre o arquivo no Bloco de Notas):
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" editar
 ```
 
-**Peça:** cole o Client ID depois de `SDP_CLIENT_ID=` e o Client Secret depois de
-`SDP_CLIENT_SECRET=`, sem espaço antes nem depois do `=`. Salve (Ctrl+S) e feche.
+**Menu de execução** para abrir o editor. Depois de aberto, peça:
 
-⚠️ **Deixe a aba da Zoho aberta**, ela é usada no passo seguinte.
+> 📋 Cole o Client ID depois de `SDP_CLIENT_ID=` e o Client Secret depois de
+> `SDP_CLIENT_SECRET=`, sem espaço antes nem depois do `=`. Salve com Ctrl+S e feche.
+>
+> Na tela da Zoho há um ícone de copiar em cada linha — use-o, é mais seguro que selecionar
+> com o mouse.
 
-**Verifique:**
-```bash
-python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" status --plugin kbr-servicedesk
-```
-deve mostrar `SDP_CLIENT_ID` e `SDP_CLIENT_SECRET` como preenchidas.
+Espere ela avisar que salvou.
 
-## ⏱️ Passo 5 — Gerar o código temporário
+## Passo 011 — Conferir que as duas chaves entraram
 
-**Execute primeiro:**
+**Por quê:** vale checar agora. Se algo foi colado no lugar errado, descobrir aqui custa um
+minuto; descobrir no passo 016 custa refazer a geração do código.
+
+**Execute** (é leitura, não precisa pedir permissão) a leitura de estado.
+
+- As duas aparecem como **preenchida**: 🟢, siga ao 012.
+- Alguma aparece **vazia**: o arquivo não foi salvo, ou o valor foi colado antes do `=`. Volte
+  ao 010 e refaça.
+
+---
+
+# Fase 4 — Autorizar
+
+## Passo 012 — Copiar a lista de permissões
+
+**Por quê:** a Zoho precisa saber o que essa chave pode fazer. São três permissões: ler
+chamados, criar notas e atualizar chamados. Nada além disso.
+
+**Comando:**
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/sdp_api.py" escopos
 ```
-e mostre o campo `escopos_em_uma_linha` da resposta — é a linha única de permissões para copiar.
 
-**Diga o que fazer, uma instrução por vez:**
+**Menu de execução.** Depois de rodar, mostre o campo `escopos_em_uma_linha` da resposta num
+bloco fácil de copiar, e diga que é essa linha inteira que vai no próximo passo.
 
-1. 🗂️ Na mesma tela da Zoho, no alto, há três abas: **Client Secret**, **Generate Code** e
-   **Settings**. Abra **Generate Code**. Se você fechou a aba, volte em
-   **https://api-console.zoho.com**, clique no cliente que acabou de criar, e ela está lá.
-2. 📥 No campo **Scope**, cole a linha de permissões que acabei de mostrar. Ela é longa e vai
-   inteira numa linha só, sem quebrar e sem espaço.
-3. ⏲️ Em **Time Duration**, escolha **10 minutes**.
-4. ✏️ Em **Scope Description**, escreva qualquer coisa que te ajude a lembrar depois, por
-   exemplo `Claude Code KINTO`. Esse texto é só para você.
-5. ✅ Clique em **CREATE**. Se ele perguntar de qual portal, escolha o da KINTO. Aparece então
-   um código curto — copie-o.
+## Passo 013 — Gerar o código temporário na Zoho
 
-⏱️ **Avise no instante em que o código aparecer:** ele vale **10 minutos** a partir de agora.
-Se demorar mais que isso, é só gerar outro — não estraga nada.
+**Por quê:** a Zoho não entrega o acesso definitivo de uma vez. Ela dá um código curto, válido
+por poucos minutos, que eu troco pelo acesso permanente no passo 016.
 
-**Execute:** `editar`. **Peça:** cole em `SDP_GRANT_CODE=`, salve e feche.
+**Sem comando — este é seu.** Peça, uma instrução por vez:
 
-⚠️ **Aqui vai o código em si, nunca uma referência `op://`.** Mesmo que a pessoa use 1Password
-e as outras chaves apontem para o cofre, esta não pode — o passo 6 apaga o código depois de
-usá-lo, e apagaria a referência junto. Se ela colar uma referência, peça para trocar pelo
-código antes de seguir.
+> 🗂️ Na mesma tela da Zoho, no alto, há três abas: **Client Secret**, **Generate Code** e
+> **Settings**. Abra **Generate Code**. Se você fechou a aba, volte em
+> **https://api-console.zoho.com** e clique no cliente que acabou de criar.
+>
+> 📥 No campo **Scope**, cole a linha de permissões que acabei de mostrar. Ela é longa e vai
+> inteira numa linha só, sem quebrar e sem espaço.
+>
+> ⏲️ Em **Time Duration**, escolha **10 minutes**.
+>
+> ✏️ Em **Scope Description**, escreva algo que te ajude a lembrar depois, por exemplo
+> `Claude Code KINTO`. Esse texto é só para você.
+>
+> ✅ Clique em **CREATE**. Se perguntar de qual portal, escolha o da KINTO. Aparece um código
+> curto — copie.
 
-**Verifique:**
+⏱️ **No instante em que o código aparecer, avise:** ele vale **10 minutos** a partir de agora.
+Se passar disso, é só gerar outro — não estraga nada.
+
+**Menu de passo manual.**
+
+## Passo 014 — Colar o código no arquivo
+
+**Por quê:** mesmo motivo do passo 010 — o código vai para o arquivo, não para a conversa.
+
+**Comando:**
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" status --plugin kbr-servicedesk
+python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" editar
 ```
-mostra `SDP_GRANT_CODE` preenchida.
 
-## 🔄 Passo 6 — Trocar o código pelo acesso permanente
+**Menu de execução** para abrir. Depois peça:
 
-**Diga:** agora eu troco esse código temporário por um acesso que não expira (o nome técnico é
-**refresh token** — você não precisa lembrar disso). Você não faz nada.
+> 📋 Cole o código depois de `SDP_GRANT_CODE=`, salve com Ctrl+S e feche.
 
-**Execute:**
+⚠️ Se a pessoa usa 1Password e perguntar: **este campo nunca pode ser uma referência `op://`**.
+O passo 016 apaga o código depois de usá-lo, e apagaria a referência junto.
+
+## Passo 015 — Conferir que o código entrou
+
+**Por quê:** o código tem prazo. Melhor confirmar que está no lugar antes de tentar usá-lo.
+
+**Execute** a leitura de estado.
+
+- `SDP_GRANT_CODE` **preenchida**: 🟢, siga imediatamente ao 016 — o relógio está correndo.
+- **Vazia**: volte ao 014.
+
+## Passo 016 — Trocar o código pelo acesso permanente
+
+**Por quê:** aqui o código temporário vira um acesso que não expira. O nome técnico é **refresh
+token** — você não precisa lembrar disso. Depois da troca, eu apago o código, porque ele é de
+uso único e não serve mais.
+
+**Comando:**
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/sdp_api.py" autorizar
 ```
 
-- Sucesso: o refresh token foi gravado e o código temporário apagado (ele é de uso único).
-- Erro: **mostre o texto do erro como veio** — ele já explica o que fazer — e volte ao passo
-  indicado na tabela de diagnóstico.
+**Menu de execução.**
 
-**Verifique:**
-```bash
-python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" status --plugin kbr-servicedesk
-```
-mostra `SDP_REFRESH_TOKEN` preenchida e `SDP_GRANT_CODE` vazia.
+- **Sucesso:** 🟢. Diga que o acesso permanente foi guardado e o código temporário apagado.
+- **Erro:** **mostre o texto como veio** — ele já diz o que fazer — e vá ao passo indicado na
+  tabela de diagnóstico. O erro mais comum é o código ter passado dos 10 minutos: nesse caso é
+  voltar ao 013 e gerar outro.
 
-## 🙋 Passo 7 — Dizer quem você é, e testar
+Confirme pela leitura de estado: `SDP_REFRESH_TOKEN` preenchida e `SDP_GRANT_CODE` vazia.
 
-**Pergunte:** seu nome completo **exatamente como aparece no ServiceDesk** (é assim que os
-chamados são procurados — uma letra diferente já conta como outra pessoa) e seu e-mail
-corporativo. Isso não é segredo, pode digitar aqui. Se a pessoa não tiver certeza da grafia
-exata, sugira conferir no próprio perfil do ServiceDesk ou num chamado antigo que ela tenha
-aberto.
+---
 
-**Execute** — não edite `~/.kbr/config.json` à mão nem peça para a pessoa abrir esse arquivo:
-ele também guarda a configuração de outros plugins KINTO, e reescrevê-lo de fora pode apagar o
-que não é seu. Use a mesma função que os scripts já usam para gravar só a parte deste plugin,
-preservando o resto:
+# Fase 5 — Identificação e teste
+
+## Passo 017 — Informar seu nome e e-mail
+
+**Por quê:** os chamados são procurados pelo nome do técnico. Ele precisa ser escrito
+**exatamente como aparece no ServiceDesk** — uma letra diferente e a busca não acha nada.
+
+**Pergunte** o nome completo e o e-mail corporativo. Isso **não é segredo**, pode ser digitado
+aqui. Se a pessoa não tiver certeza da grafia, sugira conferir no próprio perfil do ServiceDesk
+ou num chamado antigo que ela tenha aberto.
+
+**Comando** (troque os dois últimos argumentos pelos valores informados):
 ```bash
 python -c "import sys; sys.path.insert(0, sys.argv[1]); import sdp_api; sdp_api.gravar_config({'tecnico_nome': sys.argv[2], 'tecnico_email': sys.argv[3]}); print('nome e e-mail gravados')" "${CLAUDE_PLUGIN_ROOT}/scripts" "<nome completo>" "<e-mail>"
 ```
-(troque `<nome completo>` e `<e-mail>` pelos valores que a pessoa informou — eles não são
-segredo, podem ir literalmente no comando).
 
-Depois rode:
+⚠️ **Nunca edite o `config.json` à mão nem peça para a pessoa abri-lo** — ele guarda a
+configuração de outros plugins KINTO, e reescrevê-lo de fora apaga o que não é seu. O comando
+acima grava só a parte deste plugin.
+
+**Menu de execução.**
+
+## Passo 018 — Testar a conexão
+
+**Por quê:** é a prova de que tudo funcionou. Até aqui você montou as peças; agora a gente vê
+se o ServiceDesk responde.
+
+**Comando:**
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/scripts/sdp_api.py" testar
 ```
 
-- Sucesso: monte a frase a partir do JSON — "Conectado como **<tecnico>**. Você tem
-  **<chamados_abertos>** chamados abertos." Se `truncado` vier `true` (raríssimo), diga "pelo
-  menos N" em vez do número exato.
-- Zero chamados **não** é erro: a conexão funcionou.
-- "Ainda não sei quem é o técnico": o nome não foi gravado; refaça o comando acima.
-- Nome diferente do cadastrado no ServiceDesk: `testar` conecta mas conta zero. Se a pessoa
-  esperava ter chamados, peça para conferir a grafia exata no portal e repita o comando acima
-  com o nome corrigido.
+**Menu de execução.** Leia o JSON e monte a frase:
 
-## 🔒 Passo 8 — Conferir a proteção e encerrar
+> Conectado como **<tecnico>**. Você tem **<chamados_abertos>** chamados abertos.
 
-A proteção foi ligada no passo 3, antes de existir segredo no arquivo. Aqui você só confere que
-ela continua de pé — e oferece de novo, uma única vez, se a pessoa tiver recusado lá atrás.
+- **Zero chamados não é erro** — a conexão funcionou. Mas se a pessoa esperava ter chamados,
+  o nome provavelmente está escrito diferente do portal: volte ao 017 com a grafia corrigida.
+- Se vier `truncado: true` (raríssimo), diga "pelo menos N" em vez do número exato.
+- **"Ainda não sei quem é o técnico":** o nome não foi gravado. Refaça o 017.
 
-**Execute:**
-```bash
-python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" status --plugin kbr-servicedesk
-```
+## Passo 019 — Conferir a proteção e encerrar
 
-- Diz "ativa": ótimo, siga para o resumo.
-- Diz "ausente": agora **há segredo de verdade no arquivo**, então vale insistir uma vez.
-  Explique que o arquivo já tem a credencial dela dentro e pergunte se pode ligar. Depois do
-  "sim":
+**Por quê:** a proteção foi ligada no passo 007, antes de existir segredo no arquivo. Aqui só
+conferimos que continua de pé.
+
+**Execute** a leitura de estado.
+
+- **"ativa":** 🟢. Vá ao resumo.
+- **"ausente":** agora **há credencial de verdade no arquivo**, então vale oferecer uma vez
+  mais. Explique isso e pergunte. Depois do sim:
   ```bash
   python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" proteger
   ```
-  Se ela recusar de novo, **aceite e siga**. Registre no resumo que ficou sem essa camada e que
+  Se recusar de novo, aceite. Registre no resumo que ficou sem a camada e que
   `/kbr-core:secrets` liga quando ela quiser.
 
-**Feche com um resumo:**
+**Encerre com o painel completo** (todos 🟢) e um resumo:
 
-- o que ficou pronto (chave criada, acesso gravado, conexão testada, proteção ativa);
-- como usar daqui pra frente: `/kbr-servicedesk:sdp`;
-- que para trocar de credencial é só rodar este wizard de novo;
+- o que ficou pronto: chave criada na Zoho, acesso permanente guardado, conexão testada,
+  arquivo protegido;
+- como usar daqui pra frente: **`/kbr-servicedesk:sdp`**;
+- que para trocar de credencial é só rodar este assistente de novo;
 - que a chave é individual e pode ser revogada no site da Zoho quando quiser.
 
 ---
@@ -378,23 +550,23 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/kbr_secrets.py" status --plugin kbr-servic
 
 | Passo | Sintoma | Resposta |
 |---|---|---|
-| 1 | `python` não é reconhecido | Instale pela Microsoft Store ("Python 3.12", botão Obter) e **reabra o Claude Code** |
-| 1 | Python 3.9 ou menor | Instale a versão nova pela Store; as duas convivem |
-| 4 | Não acho o **ADD CLIENT** | Confira se entrou em api-console.zoho.com, não no portal do ServiceDesk |
-| 4 | Só aparece Client ID | Clique no olho ao lado do Client Secret para revelá-lo |
-| 4 | `status` diz vazia depois de colar | O arquivo não foi salvo, ou colou antes do `=`. Rode `editar` de novo |
-| 5 | A aba Generate Code não existe | Ela só aparece em cliente do tipo Self Client. Refaça o passo 4 |
-| 5 | "Invalid Scope" ao criar | Algum espaço ou quebra entrou na linha colada. Copie de novo com `escopos` |
-| 5 | Pediu para escolher o portal | Normal. Escolha o portal da KINTO |
-| 6 | "O código de autorização expirou ou já foi usado" | Volte ao passo 5 e gere outro; ele vale 10 minutos |
-| 6 | "Client ID ou Client Secret incorretos" | Volte ao passo 4; confira se copiou os dois inteiros, sem espaço antes/depois |
-| 6 | O erro menciona console de outro país (`.eu`, `.in`) | O cliente foi criado fora do console americano. Apague e recrie em api-console.zoho.com (passo 4) |
-| 6 | "O cliente não tem os escopos necessários" | Volte ao passo 5 e gere um novo código com a lista completa de `escopos` |
-| 6 | "... não devolveu um refresh token" | Gere o código de novo no passo 5; confira se o console não limitou o acesso |
-| 7 | Conecta mas conta zero | Ou não há chamados abertos, ou o nome está escrito diferente do portal — confira a grafia exata |
-| 7 | "Ainda não sei quem é o técnico" | O nome não foi gravado no passo 7; rode o comando de gravação de novo |
-| 7 | "O acesso foi revogado ou o token venceu" | O acesso foi revogado na Zoho (o Self Client pode continuar existindo). Refaça os passos 5 e 6 |
-| 6 ou 7 | "O acesso foi revogado no 1Password ou na Zoho" | Mesma coisa dita pela Zoho em vez do ServiceDesk. Refaça os passos 5 e 6 |
-| 7 | "O cliente não tem permissão para esta operação" | Faltou algum escopo. Refaça os passos 5 e 6 com a lista completa de `escopos` |
+| 001 | `python` não é reconhecido | Instale pela Microsoft Store ("Python 3.12", botão Obter) e **reabra o Claude Code** |
+| 001 | Python 3.9 ou menor | Instale a versão nova pela Store; as duas convivem |
+| 008 | Não acho o **ADD CLIENT** | Confira se entrou em api-console.zoho.com, e não no portal do ServiceDesk |
+| 009 | Só aparece o Client ID | Clique no ícone de olho ao lado do Client Secret para revelá-lo |
+| 011 | `status` diz vazia depois de colar | O arquivo não foi salvo, ou o valor foi colado antes do `=`. Volte ao 010 |
+| 013 | A aba **Generate Code** não existe | Ela só aparece em cliente do tipo Self Client. Refaça o 009 |
+| 013 | "Invalid Scope" ao criar | Entrou espaço ou quebra na linha colada. Copie de novo com o 012 |
+| 013 | Pediu para escolher o portal | Normal. Escolha o portal da KINTO |
+| 016 | "O código de autorização expirou ou já foi usado" | Volte ao 013 e gere outro; ele vale 10 minutos |
+| 016 | "Client ID ou Client Secret incorretos" | Volte ao 010; confira se copiou os dois inteiros, sem espaço |
+| 016 | O erro menciona console de outro país (`.eu`, `.in`) | A chave foi criada fora do console americano. Apague e recrie a partir do 008 |
+| 016 | "O cliente não tem os escopos necessários" | Volte ao 012 e refaça 013 a 016 com a lista completa |
+| 016 | "... não devolveu um refresh token" | Gere o código de novo no 013 |
+| 018 | Conecta mas conta zero | Ou não há chamados abertos, ou o nome está escrito diferente do portal — confira a grafia e volte ao 017 |
+| 018 | "Ainda não sei quem é o técnico" | O nome não foi gravado. Refaça o 017 |
+| 018 | "O acesso foi revogado ou o token venceu" | O acesso foi revogado na Zoho. Refaça 013 a 016 |
+| 016 ou 018 | "O acesso foi revogado no 1Password ou na Zoho" | Mesma coisa dita pela Zoho em vez do ServiceDesk. Refaça 013 a 016 |
+| 018 | "O cliente não tem permissão para esta operação" | Faltou algum escopo. Refaça 012 a 016 |
 | qualquer | "Não consegui falar com o ServiceDesk" | Rede ou VPN. Tente de novo em um minuto |
-| qualquer | "... não parece ter sido o ServiceDesk quem respondeu" | Proxy ou portal cativo na frente da rede. Confira a VPN e tente de novo |
+| qualquer | "... não parece ter sido o ServiceDesk quem respondeu" | Proxy ou portal cativo na rede. Confira a VPN e tente de novo |
