@@ -26,12 +26,14 @@ class BaseTemporaria(unittest.TestCase):
         os.environ["KBR_HOME"] = str(self.base)
         kbr_secrets._cache_op.clear()
         self._rodar_op_original = kbr_secrets._rodar_op
+        self._op_disponivel_original = kbr_secrets.op_disponivel
 
     def tearDown(self):
         os.environ.clear()
         os.environ.update(self._env_anterior)
         self.tmp.cleanup()
         kbr_secrets._rodar_op = self._rodar_op_original
+        kbr_secrets.op_disponivel = self._op_disponivel_original
 
     def escrever(self, texto):
         kbr_secrets.caminho_arquivo().write_text(texto, encoding="utf-8")
@@ -440,7 +442,12 @@ class TesteProteger(BaseTemporaria):
     def setUp(self):
         super().setUp()
         self.settings = Path(self.tmp.name) / ".claude" / "settings.json"
+        self._caminho_settings_original = kbr_secrets.caminho_settings
         kbr_secrets.caminho_settings = lambda: self.settings
+
+    def tearDown(self):
+        kbr_secrets.caminho_settings = self._caminho_settings_original
+        super().tearDown()
 
     def test_cria_o_settings_com_as_regras(self):
         self.assertEqual(kbr_secrets.main(["proteger"]), 0)
@@ -470,6 +477,49 @@ class TesteProteger(BaseTemporaria):
         codigo = kbr_secrets.main(["proteger"])
         self.assertEqual(codigo, 1)
         self.assertIn("isso não é json", self.settings.read_text(encoding="utf-8"))
+
+    def test_settings_ilegivel_nao_apaga_nada(self):
+        self.settings.parent.mkdir(parents=True)
+        self.settings.write_text('{"model": "opus"}', encoding="utf-8")
+        antes = self.settings.read_bytes()
+        original_read_text = Path.read_text
+
+        def _read_text_que_falha(caminho_lido, *args, **kwargs):
+            if caminho_lido == self.settings:
+                raise OSError("permissão negada")
+            return original_read_text(caminho_lido, *args, **kwargs)
+
+        Path.read_text = _read_text_que_falha
+        try:
+            codigo = kbr_secrets.main(["proteger"])
+        finally:
+            Path.read_text = original_read_text
+        self.assertEqual(codigo, 1)
+        self.assertEqual(self.settings.read_bytes(), antes)
+
+    def test_settings_array_no_topo_nao_apaga_nada(self):
+        self.settings.parent.mkdir(parents=True)
+        self.settings.write_text("[1, 2, 3]", encoding="utf-8")
+        antes = self.settings.read_bytes()
+        codigo = kbr_secrets.main(["proteger"])
+        self.assertEqual(codigo, 1)
+        self.assertEqual(self.settings.read_bytes(), antes)
+
+    def test_settings_permissions_com_formato_errado_nao_apaga_nada(self):
+        self.settings.parent.mkdir(parents=True)
+        self.settings.write_text(json.dumps({"permissions": "texto"}), encoding="utf-8")
+        antes = self.settings.read_bytes()
+        codigo = kbr_secrets.main(["proteger"])
+        self.assertEqual(codigo, 1)
+        self.assertEqual(self.settings.read_bytes(), antes)
+
+    def test_settings_deny_com_formato_errado_nao_apaga_nada(self):
+        self.settings.parent.mkdir(parents=True)
+        self.settings.write_text(json.dumps({"permissions": {"deny": {}}}), encoding="utf-8")
+        antes = self.settings.read_bytes()
+        codigo = kbr_secrets.main(["proteger"])
+        self.assertEqual(codigo, 1)
+        self.assertEqual(self.settings.read_bytes(), antes)
 
 
 class TestePermissoesComSubprocessSubstituido(unittest.TestCase):

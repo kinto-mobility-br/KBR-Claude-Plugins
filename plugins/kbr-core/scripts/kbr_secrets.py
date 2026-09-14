@@ -416,18 +416,37 @@ def cmd_editar(_args) -> int:
     return 0
 
 
+def _orientar_e_nao_mexer(caminho: Path, motivo: str) -> int:
+    """Imprime as regras para aplicar à mão e devolve 1, sem tocar no arquivo.
+
+    Caminho comum para JSON inválido, arquivo ilegível e JSON de formato
+    inesperado (ex.: uma lista no topo, ou "permissions" que não é objeto) —
+    em todos os casos não entendemos o arquivo o suficiente para editá-lo com
+    segurança, então o usuário aplica as regras à mão.
+    """
+    print(f"não consegui entender o {caminho}: {motivo}.")
+    print("não mexi em nada. acrescente estas linhas à mão em permissions.deny:")
+    for regra in REGRAS_DENY:
+        print(f"  {regra}")
+    return 1
+
+
 def cmd_proteger(_args) -> int:
     caminho = caminho_settings()
     dados: dict = {}
     if caminho.exists():
         try:
             dados = json.loads(caminho.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            print(f"não consegui entender o {caminho}: não é um JSON válido.")
-            print("não mexi em nada. acrescente estas linhas à mão em permissions.deny:")
-            for regra in REGRAS_DENY:
-                print(f"  {regra}")
-            return 1
+        except (json.JSONDecodeError, OSError):
+            return _orientar_e_nao_mexer(caminho, "não é um JSON válido")
+        if not isinstance(dados, dict):
+            return _orientar_e_nao_mexer(caminho, "o conteúdo não é um objeto JSON")
+        permissoes_atuais = dados.get("permissions", {})
+        if not isinstance(permissoes_atuais, dict):
+            return _orientar_e_nao_mexer(caminho, 'o campo "permissions" não é um objeto')
+        deny_atual = permissoes_atuais.get("deny", [])
+        if not isinstance(deny_atual, list):
+            return _orientar_e_nao_mexer(caminho, 'o campo "permissions.deny" não é uma lista')
     permissoes = dados.setdefault("permissions", {})
     deny = permissoes.setdefault("deny", [])
     novas = [regra for regra in REGRAS_DENY if regra not in deny]
