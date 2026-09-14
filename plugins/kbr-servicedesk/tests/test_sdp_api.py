@@ -11,11 +11,25 @@ import unittest
 import urllib.error
 import urllib.parse
 from pathlib import Path
+from types import SimpleNamespace
 
 RAIZ_PLUGIN = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ_PLUGIN / "scripts"))
 import kbr_secrets  # noqa: E402
 import sdp_api  # noqa: E402
+
+
+class OpFalsoSDP:
+    """Duplo do 1Password CLI (mesmo padrão da Task 2), com outro nome para não
+    depender do arquivo de teste do kbr-core."""
+
+    def __init__(self, saida="", erro="", codigo=0):
+        self.saida, self.erro, self.codigo = saida, erro, codigo
+        self.chamadas = []
+
+    def __call__(self, argumentos, **kwargs):
+        self.chamadas.append(list(argumentos))
+        return SimpleNamespace(returncode=self.codigo, stdout=self.saida, stderr=self.erro)
 
 
 class RespostaFalsa(io.BytesIO):
@@ -85,9 +99,11 @@ class BaseSDP(unittest.TestCase):
         sdp_api.gravar_config({"tecnico_nome": "Fulano de Tal",
                                "tecnico_email": "fulano@kintomobility.com.br"})
         self._abrir_original = sdp_api._abrir
+        self._rodar_op_original = kbr_secrets._rodar_op
 
     def tearDown(self):
         sdp_api._abrir = self._abrir_original
+        kbr_secrets._rodar_op = self._rodar_op_original
         os.environ.clear()
         os.environ.update(self._env)
         self.tmp.cleanup()
@@ -669,6 +685,78 @@ class TesteLimpo(unittest.TestCase):
 
     def test_corta_no_limite(self):
         self.assertTrue(sdp_api.limpo("x" * 500, limite=100).endswith("..."))
+
+
+class TesteAutorizar(BaseComando):
+    def preparar(self, grant="codigo-de-autorizacao"):
+        kbr_secrets.caminho_arquivo().write_text(
+            "SDP_CLIENT_ID=cid\nSDP_CLIENT_SECRET=csec\n"
+            f"SDP_GRANT_CODE={grant}\nSDP_REFRESH_TOKEN=\n", encoding="utf-8")
+
+    def test_troca_o_grant_code_por_refresh_token(self):
+        self.preparar()
+        rede = self.rede({"refresh_token": "rt-novo", "access_token": "acc", "expires_in": 3600})
+        codigo, saida = self.executar("autorizar")
+        self.assertEqual(codigo, 0)
+        self.assertTrue(self.json_da_saida(saida)["autorizado"])
+        self.assertIn("grant_type=authorization_code", rede.chamadas[0]["corpo"])
+        self.assertEqual(kbr_secrets.ler_arquivo()["SDP_REFRESH_TOKEN"], "rt-novo")
+
+    def test_apaga_o_grant_code_depois(self):
+        self.preparar()
+        self.rede({"refresh_token": "rt-novo", "expires_in": 3600})
+        self.executar("autorizar")
+        self.assertEqual(kbr_secrets.ler_arquivo()["SDP_GRANT_CODE"], "")
+
+    def test_nao_imprime_nenhum_token(self):
+        self.preparar()
+        self.rede({"refresh_token": "rt-super-secreto", "access_token": "acc-secreto",
+                   "expires_in": 3600})
+        _, saida = self.executar("autorizar")
+        self.assertNotIn("rt-super-secreto", saida)
+        self.assertNotIn("acc-secreto", saida)
+
+    def test_codigo_expirado_traduzido(self):
+        self.preparar()
+        self.rede({"error": "invalid_code"})
+        codigo, saida = self.executar("autorizar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("10 minutos", self.json_da_saida(saida)["erro"])
+
+    def test_grant_code_vazio_orienta_o_passo_5(self):
+        self.preparar(grant="")
+        codigo, saida = self.executar("autorizar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("SDP_GRANT_CODE", self.json_da_saida(saida)["erro"])
+
+    def test_resposta_sem_refresh_token(self):
+        self.preparar()
+        self.rede({"access_token": "acc"})
+        codigo, saida = self.executar("autorizar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("refresh", self.json_da_saida(saida)["erro"].lower())
+
+    def test_grava_via_kbr_secrets_respeitando_op(self):
+        kbr_secrets.caminho_arquivo().write_text(
+            "SDP_CLIENT_ID=cid\nSDP_CLIENT_SECRET=csec\nSDP_GRANT_CODE=gc\n"
+            "SDP_REFRESH_TOKEN=op://Cofre/Item/refresh-token\n", encoding="utf-8")
+        falso = OpFalsoSDP(saida="ok")
+        kbr_secrets._rodar_op = falso
+        self.rede({"refresh_token": "rt-novo", "expires_in": 3600})
+        self.executar("autorizar")
+        texto = kbr_secrets.caminho_arquivo().read_text(encoding="utf-8")
+        self.assertIn("op://Cofre/Item/refresh-token", texto)
+        self.assertNotIn("rt-novo", texto)
+        self.assertEqual(falso.chamadas[0][:2], ["item", "edit"])
+
+
+class TesteEscopos(BaseComando):
+    def test_lista_os_tres_escopos(self):
+        codigo, saida = self.executar("escopos")
+        self.assertEqual(codigo, 0)
+        dados = self.json_da_saida(saida)
+        self.assertEqual(dados["escopos"], sdp_api.ESCOPOS)
+        self.assertIn("api-console.zoho.com", dados["console"])
 
 
 if __name__ == "__main__":

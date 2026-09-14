@@ -613,6 +613,59 @@ def cmd_resolver(args) -> int:
                    "resolver chamado", args.numero)
 
 
+def _limpar_grant_code() -> None:
+    """Esvazia o SDP_GRANT_CODE no arquivo: ele é de uso único."""
+    caminho = kbr_secrets.caminho_arquivo()
+    if not caminho.exists():
+        return
+    linhas = caminho.read_text(encoding="utf-8").splitlines()
+    padrao = re.compile(r"^\s*SDP_GRANT_CODE\s*=")
+    for indice, linha in enumerate(linhas):
+        if padrao.match(linha):
+            linhas[indice] = "SDP_GRANT_CODE="
+    caminho.write_text("\n".join(linhas) + "\n", encoding="utf-8")
+
+
+def cmd_autorizar(_args) -> int:
+    grant = kbr_secrets.obter("SDP_GRANT_CODE", obrigatorio=False)
+    if not grant:
+        raise ErroSDP("O campo SDP_GRANT_CODE está vazio. Volte ao passo 5 do wizard, "
+                      "gere um código no console da Zoho e cole no arquivo de segredos. "
+                      "Lembre que ele vale 10 minutos.")
+    config = ler_config()
+    status, corpo = _postar_form(config["token_url"], {
+        "grant_type": "authorization_code",
+        "code": grant,
+        "client_id": _segredo("SDP_CLIENT_ID"),
+        "client_secret": _segredo("SDP_CLIENT_SECRET"),
+    })
+    refresh = (corpo or {}).get("refresh_token")
+    if status >= 300 or (corpo or {}).get("error"):
+        raise ErroSDP(traduzir("zoho", corpo or {}))
+    if not refresh:
+        raise ErroSDP("A Zoho aceitou o código mas não devolveu um refresh token. Gere "
+                      "outro código no passo 5 marcando a opção de acesso offline.")
+    try:
+        kbr_secrets.gravar("SDP_REFRESH_TOKEN", refresh)
+    except kbr_secrets.ErroSegredo as erro:
+        raise ErroSDP(str(erro)) from None
+    _limpar_grant_code()
+    _imprimir({"autorizado": True,
+               "mensagem": "Acesso permanente gravado. O código de autorização foi apagado "
+                           "porque é de uso único."})
+    return 0
+
+
+def cmd_escopos(_args) -> int:
+    _imprimir({
+        "console": "https://api-console.zoho.com",
+        "escopos": ESCOPOS,
+        "escopos_em_uma_linha": ",".join(ESCOPOS),
+        "duracao_recomendada": "10 minutos",
+    })
+    return 0
+
+
 # --------------------------------------------------------------------------- entrada
 
 def _imprimir(dados: dict) -> None:
@@ -651,11 +704,15 @@ def construir_parser() -> argparse.ArgumentParser:
     resolver.add_argument("--arquivo", required=True, help="arquivo com o HTML da conclusão")
     resolver.add_argument("--confirmar", action="store_true")
 
+    sub.add_parser("autorizar", help="troca o código de autorização por acesso permanente")
+    sub.add_parser("escopos", help="mostra os escopos a marcar no console da Zoho")
+
     return parser
 
 
 COMANDOS = {"testar": cmd_testar, "listar": cmd_listar, "detalhe": cmd_detalhe,
-            "nota": cmd_nota, "status": cmd_status, "resolver": cmd_resolver}
+            "nota": cmd_nota, "status": cmd_status, "resolver": cmd_resolver,
+            "autorizar": cmd_autorizar, "escopos": cmd_escopos}
 
 
 def main(argumentos: list[str] | None = None) -> int:
