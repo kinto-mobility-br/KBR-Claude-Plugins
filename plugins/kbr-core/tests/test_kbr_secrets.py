@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """Testes do módulo de segredos — parser do .env e ordem de resolução."""
+import io
 import os
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -294,6 +296,98 @@ class TesteInitERegistrar(BaseTemporaria):
         self.executar("init")
         self.assertEqual(kbr_secrets.caminho_base().stat().st_mode & 0o777, 0o700)
         self.assertEqual(kbr_secrets.caminho_arquivo().stat().st_mode & 0o777, 0o600)
+
+    def test_registrar_recusa_chave_invalida_e_nao_grava(self):
+        self.executar("init")
+        antes = kbr_secrets.caminho_arquivo().read_text(encoding="utf-8")
+        saida = io.StringIO()
+        with redirect_stdout(saida):
+            resultado = self.executar("registrar", "--plugin", "p",
+                                       "--chaves", "minha-chave,A")
+        self.assertEqual(resultado, 1)
+        self.assertIn("minha-chave", saida.getvalue())
+        depois = kbr_secrets.caminho_arquivo().read_text(encoding="utf-8")
+        self.assertEqual(antes, depois)
+        self.assertNotIn("# --- p ---", depois)
+
+    def test_chaves_pedidas_remove_duplicatas(self):
+        self.assertEqual(kbr_secrets._chaves_pedidas("A,A,B"), ["A", "B"])
+
+    def test_registrar_com_chaves_duplicadas_nao_duplica_linha(self):
+        self.executar("init")
+        self.executar("registrar", "--plugin", "p", "--chaves", "A,A,B")
+        texto = kbr_secrets.caminho_arquivo().read_text(encoding="utf-8")
+        self.assertEqual(texto.count("A="), 1)
+        self.assertEqual(texto.count("B="), 1)
+
+
+class TestePermissoesComSubprocessSubstituido(unittest.TestCase):
+    """Cobre os ramos de decisão de `aplicar_permissoes`/`conferir_permissoes`
+    substituindo `kbr_secrets.os.name` e `kbr_secrets.subprocess.run` — roda em
+    qualquer plataforma, sem depender do `icacls`/`chmod` reais do host."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmp.name)
+        self._os_name_original = kbr_secrets.os.name
+        self._subprocess_run_original = kbr_secrets.subprocess.run
+
+    def tearDown(self):
+        kbr_secrets.os.name = self._os_name_original
+        kbr_secrets.subprocess.run = self._subprocess_run_original
+        self.tmp.cleanup()
+
+    @staticmethod
+    def _run_falso(saida="", codigo=0, excecao=None):
+        def _fake(argumentos, **kwargs):
+            if excecao is not None:
+                raise excecao
+            return SimpleNamespace(returncode=codigo, stdout=saida, stderr="")
+        return _fake
+
+    def test_aplicar_permissoes_windows_icacls_retorna_erro(self):
+        kbr_secrets.os.name = "nt"
+        kbr_secrets.subprocess.run = self._run_falso(codigo=1)
+        avisos = kbr_secrets.aplicar_permissoes(self.base)
+        self.assertEqual(len(avisos), 1)
+
+    def test_aplicar_permissoes_windows_icacls_nao_encontrado(self):
+        kbr_secrets.os.name = "nt"
+        kbr_secrets.subprocess.run = self._run_falso(excecao=FileNotFoundError("icacls"))
+        avisos = kbr_secrets.aplicar_permissoes(self.base)
+        self.assertEqual(len(avisos), 1)
+
+    def test_aplicar_permissoes_windows_oserror_generico_vira_aviso(self):
+        kbr_secrets.os.name = "nt"
+        kbr_secrets.subprocess.run = self._run_falso(excecao=OSError("acesso negado"))
+        avisos = kbr_secrets.aplicar_permissoes(self.base)
+        self.assertEqual(len(avisos), 1)
+
+    def test_aplicar_permissoes_posix_chmod_levanta_vira_aviso(self):
+        kbr_secrets.os.name = "posix"
+        original_chmod = Path.chmod
+
+        def chmod_que_falha(self, modo):
+            raise PermissionError("permissão negada")
+
+        Path.chmod = chmod_que_falha
+        try:
+            avisos = kbr_secrets.aplicar_permissoes(self.base)
+        finally:
+            Path.chmod = original_chmod
+        self.assertEqual(len(avisos), 1)
+
+    def test_conferir_permissoes_windows_identidade_ampla_gera_aviso(self):
+        kbr_secrets.os.name = "nt"
+        kbr_secrets.subprocess.run = self._run_falso(saida="BUILTIN\\Usuários:(OI)(CI)(F)")
+        avisos = kbr_secrets.conferir_permissoes(self.base)
+        self.assertEqual(len(avisos), 1)
+
+    def test_conferir_permissoes_windows_so_usuario_atual_nao_gera_aviso(self):
+        kbr_secrets.os.name = "nt"
+        kbr_secrets.subprocess.run = self._run_falso(saida="Strix\\fabioabr:(OI)(CI)(F)")
+        avisos = kbr_secrets.conferir_permissoes(self.base)
+        self.assertEqual(avisos, [])
 
 
 if __name__ == "__main__":

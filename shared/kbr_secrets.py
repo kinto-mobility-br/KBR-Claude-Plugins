@@ -219,11 +219,17 @@ def aplicar_permissoes(base: Path) -> list[str]:
                 avisos.append("não consegui restringir a pasta ao seu usuário com o icacls")
         except FileNotFoundError:
             avisos.append("icacls não encontrado; a pasta ficou com as permissões herdadas")
+        except OSError as erro:
+            avisos.append(
+                f"falha ao rodar o icacls ({erro}); a pasta ficou com as permissões herdadas")
     else:
-        base.chmod(0o700)
-        arquivo = base / "secrets.env"
-        if arquivo.exists():
-            arquivo.chmod(0o600)
+        try:
+            base.chmod(0o700)
+            arquivo = base / "secrets.env"
+            if arquivo.exists():
+                arquivo.chmod(0o600)
+        except OSError as erro:
+            avisos.append(f"não consegui restringir as permissões da pasta ({erro})")
     return avisos
 
 
@@ -235,7 +241,7 @@ def conferir_permissoes(base: Path) -> list[str]:
     if os.name == "nt":
         try:
             processo = subprocess.run(["icacls", str(base)], capture_output=True, text=True)
-        except FileNotFoundError:
+        except OSError:
             return []
         if processo.returncode != 0:
             return []
@@ -244,7 +250,10 @@ def conferir_permissoes(base: Path) -> list[str]:
             return ["a pasta parece acessível a outros usuários da máquina; "
                     "rode /kbr-core:secrets init de novo para restringir"]
         return []
-    modo = base.stat().st_mode & 0o777
+    try:
+        modo = base.stat().st_mode & 0o777
+    except OSError:
+        return []
     if modo & 0o077:
         return [f"a pasta está com permissões {modo:o}; o esperado é 700"]
     return []
@@ -269,15 +278,23 @@ def cmd_init(_args) -> int:
 
 
 def _chaves_pedidas(bruto: str) -> list[str]:
-    return [parte.strip() for parte in bruto.split(",") if parte.strip()]
+    """Divide a lista separada por vírgula, removendo espaços e duplicatas —
+    mantém a ordem da primeira ocorrência de cada chave."""
+    partes = (parte.strip() for parte in bruto.split(","))
+    return list(dict.fromkeys(parte for parte in partes if parte))
 
 
 def cmd_registrar(args) -> int:
+    chaves = _chaves_pedidas(args.chaves)
+    invalidas = [chave for chave in chaves if not _CHAVE_VALIDA.match(chave)]
+    if invalidas:
+        print(f"nome de chave inválido, nada foi gravado: {', '.join(invalidas)}")
+        return 1
     cmd_init(args)
     arquivo = caminho_arquivo()
     texto = arquivo.read_text(encoding="utf-8")
     existentes = analisar(texto)[0]
-    faltando = [c for c in _chaves_pedidas(args.chaves) if c not in existentes]
+    faltando = [c for c in chaves if c not in existentes]
     if not faltando:
         print(f"nada a fazer: as chaves de {args.plugin} já estão no arquivo")
         return 0
