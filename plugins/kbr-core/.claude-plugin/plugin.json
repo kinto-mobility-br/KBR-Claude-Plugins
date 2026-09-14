@@ -1,0 +1,8 @@
+{
+  "name": "kbr-core",
+  "displayName": "KINTO — Núcleo",
+  "version": "0.1.0",
+  "description": "Segredos por usuário em ~/.kbr/secrets.env, com proteção contra leitura pelo modelo. Base dos demais plugins KINTO.",
+  "author": { "name": "KINTO Brasil — TI" },
+  "keywords": ["kinto", "secrets", "segredos", "seguranca"]
+}
