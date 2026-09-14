@@ -11,7 +11,7 @@
     },
     {
       "name": "kbr-servicedesk",
-      "description": "Gestor de chamados do ServiceDesk Plus por menu, com wizard de configuração",
+      "description": "Gestor de chamados do ServiceDesk Plus por menu, com wizard de configuração, e extração de dados para CSV/analytics",
       "source": "./plugins/kbr-servicedesk",
       "category": "productivity"
     }

@@ -6,3 +6,4 @@ __pycache__/
 !*.env.exemplo
 .DS_Store
 Thumbs.db
+/chamados*.csv

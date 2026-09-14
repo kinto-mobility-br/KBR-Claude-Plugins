@@ -136,13 +136,14 @@ class TesteConfig(BaseSDP):
 
 
 class TesteDataParaMs(BaseSDP):
-    def test_meia_noite_utc(self):
-        # Verificado ao vivo em 2026-09-14 (spec, seção 2.2): 1756684800000 ms é
-        # 2025-09-01T00:00:00 UTC — a mesma forma usada na busca real contra o SDP.
-        self.assertEqual(sdp_api._data_para_ms("2025-09-01"), "1756684800000")
+    def test_meia_noite_em_brasilia(self):
+        # Meia-noite em Brasília (UTC-3) é 03:00 UTC — 10800000 ms a mais que meia-noite UTC.
+        # Conferido com zoneinfo.ZoneInfo("America/Sao_Paulo") fora do código de produção
+        # (só para validar o número; o código de produção usa offset fixo, ver FUSO_BRASILIA).
+        self.assertEqual(sdp_api._data_para_ms("2025-09-01"), "1756695600000")
 
     def test_um_mes_depois(self):
-        self.assertEqual(sdp_api._data_para_ms("2025-10-01"), "1759276800000")
+        self.assertEqual(sdp_api._data_para_ms("2025-10-01"), "1759287600000")
 
 
 class TesteToken(BaseSDP):
@@ -919,6 +920,19 @@ class TesteBuscarQuery(BaseSDP):
         self.assertEqual(len(chamados), sdp_api.LIMITE_PAGINAS)
         self.assertEqual(len(rede.chamadas), sdp_api.LIMITE_PAGINAS)
 
+    def test_periodo_e_abertos_combinam_com_and(self):
+        rede = self.rede(CHAMADO_QUERY)
+        sdp_api._buscar_query(
+            "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
+            "created_time", None, True)
+        entrada = json.loads(urllib.parse.parse_qs(
+            rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
+        criterios = entrada["list_info"]["search_criteria"]
+        self.assertEqual(len(criterios), 2)
+        self.assertEqual(criterios[0]["condition"], "between")
+        self.assertEqual(criterios[1]["condition"], "is not")
+        self.assertEqual(criterios[1]["logical_operator"], "AND")
+
 
 class TesteResumirQuery(unittest.TestCase):
     def test_mapeia_todas_as_colunas(self):
@@ -961,8 +975,8 @@ class TesteEscreverCsv(unittest.TestCase):
     def test_escreve_cabecalho_e_uma_linha_por_chamado(self):
         caminho = Path(self.tmp.name) / "saida.csv"
         sdp_api._escrever_csv(caminho, CHAMADO_QUERY["requests"])
-        with caminho.open(encoding="utf-8", newline="") as arquivo:
-            leitor = csv.reader(arquivo)
+        with caminho.open(encoding="utf-8-sig", newline="") as arquivo:
+            leitor = csv.reader(arquivo, delimiter=";")
             linhas = list(leitor)
         self.assertEqual(linhas[0], sdp_api.COLUNAS_QUERY)
         self.assertEqual(len(linhas), 2)
@@ -983,6 +997,13 @@ class TesteEscreverCsv(unittest.TestCase):
         caminho = Path(self.tmp.name) / "subpasta" / "saida.csv"
         sdp_api._escrever_csv(caminho, CHAMADO_QUERY["requests"])
         self.assertTrue(caminho.is_file())
+
+    def test_falha_de_escrita_vira_errosdp(self):
+        obstaculo = Path(self.tmp.name) / "nao_e_pasta"
+        obstaculo.write_text("bloqueio", encoding="utf-8")
+        caminho = obstaculo / "saida.csv"
+        with self.assertRaises(sdp_api.ErroSDP):
+            sdp_api._escrever_csv(caminho, CHAMADO_QUERY["requests"])
 
 
 class TesteArquivoPadrao(unittest.TestCase):
@@ -1014,6 +1035,13 @@ class TesteCmdQuery(BaseComando):
         erro = self.json_da_saida(saida)["erro"]
         self.assertIn("--de", erro)
         self.assertIn("--ate", erro)
+
+    def test_data_mal_formatada_vira_erro_pt_br(self):
+        codigo, saida = self.executar(
+            "query", "--de", "2026/09/01", "--ate", "2026-10-01")
+        self.assertEqual(codigo, 1)
+        erro = self.json_da_saida(saida)["erro"]
+        self.assertIn("AAAA-MM-DD", erro)
 
     def test_ate_sem_de_e_erro(self):
         codigo, saida = self.executar("query", "--ate", "2026-10-01")

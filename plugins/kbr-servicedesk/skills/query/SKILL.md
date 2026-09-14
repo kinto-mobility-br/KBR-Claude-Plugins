@@ -23,6 +23,11 @@ técnicos, não só quem está conversando com você.
   coletadas, não a base inteira do período.
 - 🔒 **Segredo nunca no chat.** Se faltar credencial, leve para a skill `sdp`, opção 6.
 - 🇧🇷 Tudo em PT-BR, com acentuação correta.
+- 👤 **Se o pedido for claramente só sobre os SEUS chamados** ("meus chamados de setembro",
+  "os que eu resolvi este mês") — este comando não filtra por técnico, ele sempre traz toda
+  a operação. Ou redirecione para a skill `sdp`, opção 7 (resposta em texto, sem arquivo,
+  só dos seus chamados), ou rode a query mesmo assim e avise claramente, antes de entregar o
+  arquivo, que ele contém os chamados de TODOS os técnicos, não só os da pessoa.
 
 ## Como chamar o script
 

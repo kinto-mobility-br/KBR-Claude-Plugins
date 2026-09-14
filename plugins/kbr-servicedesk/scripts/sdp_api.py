@@ -17,7 +17,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -283,16 +283,33 @@ STATUS_FINAIS = ["Resolved", "Closed", "Canceled"]
 # vazava 335 chamados cancelados como se fossem "abertos" (total_count 517 vs 182 reais).
 # Se um dia o SDP usar as duas grafias ao mesmo tempo, listar as duas aqui.
 
+FUSO_BRASILIA = timezone(timedelta(hours=-3), name="America/Sao_Paulo")
+# UTC-3 fixo: o Brasil não usa mais horário de verão desde 2019, então não há transição
+# sazonal para tratar. Deliberadamente NÃO usamos zoneinfo.ZoneInfo aqui — no Windows, sem
+# o banco de dados IANA instalado pelo SO, isso exigiria "pip install tzdata", violando a
+# regra do repositório de que nenhum plugin pode depender de instalação externa.
+
 
 def _data_para_ms(data_iso: str) -> str:
-    """Converte "AAAA-MM-DD" em milissegundos desde a época Unix, meia-noite UTC.
+    """Converte "AAAA-MM-DD" em milissegundos desde a época Unix, meia-noite em horário de
+    Brasília (UTC-3 fixo, ver FUSO_BRASILIA).
 
-    É a mesma forma verificada ao vivo contra o SDP real da KINTO (spec de 2026-09-14,
-    seção 2.2): um único campo de data em ms, como string. Não ajusta fuso horário local —
-    o teste que fixou este comportamento usa os mesmos valores que a busca real confirmou.
+    A forma do valor (ms desde a época, como string) é a mesma verificada ao vivo contra o
+    SDP real da KINTO (spec de 2026-09-14, seção 2.2) — o servidor só compara os números que
+    mandamos, então um deslocamento fixo de fuso não muda o mecanismo já validado, só o valor.
+    A fronteira em horário de Brasília (em vez de UTC) é o que faz "setembro" no arquivo bater
+    com "setembro" no calendário de quem pediu.
     """
-    momento = datetime.strptime(data_iso, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    momento = datetime.strptime(data_iso, "%Y-%m-%d").replace(tzinfo=FUSO_BRASILIA)
     return str(int(momento.timestamp() * 1000))
+
+
+def _exigir_data(rotulo: str, valor: str) -> str:
+    try:
+        return _data_para_ms(valor)
+    except ValueError:
+        raise ErroSDP(f'A data de "{rotulo}" precisa estar no formato AAAA-MM-DD '
+                      f'(exemplo: 2026-09-01). Veio "{valor}".') from None
 
 
 def limpo(bruto: str, limite: int = 3000) -> str:
@@ -465,12 +482,17 @@ def _resumir_query(bruto: dict) -> dict:
 
 
 def _escrever_csv(caminho: Path, chamados: list[dict]) -> None:
-    caminho.parent.mkdir(parents=True, exist_ok=True)
-    with caminho.open("w", newline="", encoding="utf-8") as arquivo:
-        escritor = csv.DictWriter(arquivo, fieldnames=COLUNAS_QUERY)
-        escritor.writeheader()
-        for bruto in chamados:
-            escritor.writerow(_resumir_query(bruto))
+    try:
+        caminho.parent.mkdir(parents=True, exist_ok=True)
+        with caminho.open("w", newline="", encoding="utf-8-sig") as arquivo:
+            escritor = csv.DictWriter(arquivo, fieldnames=COLUNAS_QUERY, delimiter=";")
+            escritor.writeheader()
+            for bruto in chamados:
+                escritor.writerow(_resumir_query(bruto))
+    except OSError as erro:
+        raise ErroSDP(f'Não consegui gravar o arquivo "{caminho}" — {erro.strerror or erro}. '
+                      'Se ele estiver aberto no Excel ou outro programa, feche e tente de '
+                      'novo.') from None
 
 
 def _arquivo_padrao(de: str | None, ate: str | None) -> Path:
@@ -771,9 +793,9 @@ def cmd_query(args) -> int:
     de, ate = args.de, args.ate
     if bool(de) != bool(ate):
         raise ErroSDP('Informe "--de" e "--ate" juntos, ou nenhum dos dois.')
+    de_ms = _exigir_data("--de", de) if de else None
+    ate_ms = _exigir_data("--ate", ate) if ate else None
     token = access_token()
-    de_ms = _data_para_ms(de) if de else None
-    ate_ms = _data_para_ms(ate) if ate else None
     brutos, truncado = _buscar_query(
         token, de_ms, ate_ms, args.campo_data, args.status, args.abertos)
     caminho = Path(args.arquivo) if args.arquivo else _arquivo_padrao(de, ate)
@@ -829,7 +851,9 @@ def construir_parser() -> argparse.ArgumentParser:
     query.add_argument("--de", default=None, help="data inicial, AAAA-MM-DD (inclusiva)")
     query.add_argument("--ate", default=None, help="data final, AAAA-MM-DD (exclusiva)")
     query.add_argument("--campo-data", dest="campo_data", default="created_time",
-                       choices=["created_time", "resolved_time"])
+                       choices=["created_time", "resolved_time"],
+                       help="qual data usar no filtro de período: quando o chamado foi "
+                            "criado ou quando foi resolvido")
     grupo_status = query.add_mutually_exclusive_group()
     grupo_status.add_argument("--status", default=None, help="filtra por um status exato")
     grupo_status.add_argument("--abertos", action="store_true",

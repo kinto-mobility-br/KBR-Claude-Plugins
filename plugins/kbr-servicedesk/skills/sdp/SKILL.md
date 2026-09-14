@@ -126,13 +126,18 @@ chamados abertos" no cabeçalho.
    Ofereça fazer isso um por um se a pessoa quiser.
 
    **Como responder:**
+   - **Se o pedido for sobre toda a operação (todos os técnicos) ou a pessoa quiser um
+     arquivo para abrir fora do chat**, isso não é aqui: leve para a skill
+     `/kbr-servicedesk:query`, que tem filtro de data de verdade no servidor e olha toda a
+     operação. Esta opção 7 é só para os SEUS próprios chamados, respondidos em texto.
    - Se o pedido não ficou claro, pergunte o suficiente para saber o que buscar — não adivinhe
      um filtro que a pessoa não pediu.
    - Busque os dados com `listar --todos` (traz abertos e fechados; sem isso, um pedido sobre
      um mês passado perderia os já resolvidos). Se o pedido for claramente só sobre os chamados
      em aberto agora, `listar` sem `--todos` já basta e é mais rápido.
-   - **Não existe filtro de data no script.** Filtre e agrupe você mesmo, a partir da lista que
-     `listar` devolveu — não invente uma flag que não existe.
+   - **Não existe filtro de data no `listar`.** Para os SEUS chamados, filtre e agrupe você
+     mesmo a partir da lista que `listar --todos` devolveu — não invente uma flag que não
+     existe nele.
    - `criado_em` vem em **inglês**, no formato que a API do SDP devolve (ex.: "May 29, 2026
      11:26 AM"). Interprete mês e ano nesse formato mesmo respondendo em português.
    - Responda como contagem quando for contagem, como tabela quando for lista. Não force uma
