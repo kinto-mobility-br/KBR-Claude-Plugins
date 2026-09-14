@@ -246,8 +246,8 @@ def montar_yaml(raiz: Path, nome: str, origem_nome: str,
     return f'''# ============================================================================
 # IDENTIDADE DO PROJETO PARA A DOCUMENTAÇÃO HTML
 # ----------------------------------------------------------------------------
-# Lido pela skill `docs-html` a cada documento gerado. Gerado por `docs-init`
-# em {raiz.name} — daqui para a frente, editável à mão.
+# Lido pela skill `report-creator` a cada documento gerado. Gerado por ela mesma,
+# na descoberta de marca, em {raiz.name} — daqui para a frente, editável à mão.
 #
 # Duas regras que valem para o arquivo inteiro:
 #   · caminho é sempre relativo à RAIZ do projeto (onde este arquivo está);

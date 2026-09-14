@@ -154,6 +154,15 @@ class TesteMontarYaml(unittest.TestCase):
         self.assertIn('claro: "assets/logo-claro.svg"', texto)
         self.assertIn('brand: "#336699"', texto)
 
+    def test_nao_cita_as_skills_antigas_separadas(self):
+        texto = descobrir.montar_yaml(
+            Path("/tmp/projeto-x"), "Projeto X", "CLAUDE.md",
+            {"caminho": "assets/logo-claro.svg", "cor": "#336699"},
+            {"caminho": "assets/logo-escuro.svg", "cor": None})
+        self.assertNotIn("docs-html", texto)
+        self.assertNotIn("docs-init", texto)
+        self.assertIn("report-creator", texto)
+
 
 class TesteMain(unittest.TestCase):
     def setUp(self):

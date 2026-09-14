@@ -48,9 +48,10 @@ def _valor_escalar(bruto: str):
         return None
     if bruto.startswith('"') and bruto.endswith('"') and len(bruto) >= 2:
         return bruto[1:-1].replace('\\"', '"')
-    if bruto == 'true':
+    minusculo = bruto.casefold()
+    if minusculo in ('true', 'yes', 'on'):
         return True
-    if bruto == 'false':
+    if minusculo in ('false', 'no', 'off'):
         return False
     return bruto
 
@@ -90,7 +91,7 @@ def carregar_yaml_simples(texto: str) -> dict:
 
 
 def carregar_yaml(caminho: Path) -> dict:
-    return carregar_yaml_simples(caminho.read_text(encoding='utf-8'))
+    return carregar_yaml_simples(caminho.read_text(encoding='utf-8-sig'))
 
 
 def raiz_do_projeto(inicio: Path) -> Path:
@@ -279,8 +280,8 @@ def main() -> int:
 
     yml = raiz / '.docs-brand.yml'
     if not yml.exists():
-        print(f'Não achei {yml}.\nRode a descoberta de marca (docs-init) antes — ela acha os '
-              f'logos e a marca deste projeto.', file=sys.stderr)
+        print(f'Não achei {yml}.\nInvoque a skill /kbr-docs:report-creator — ela descobre os '
+              f'logos e a marca deste projeto na primeira vez.', file=sys.stderr)
         return 1
     cfg = carregar_yaml(yml)
 

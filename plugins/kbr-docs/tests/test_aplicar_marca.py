@@ -50,6 +50,24 @@ marca:
         cfg = aplicar_marca.carregar_yaml_simples('tipografia:\n  fontes_externas: true\n')
         self.assertIs(cfg["tipografia"]["fontes_externas"], True)
 
+    def test_booleano_aceita_variacoes_do_yaml_1_1(self):
+        for texto_verdadeiro in ('true', 'True', 'TRUE', 'yes', 'on'):
+            cfg = aplicar_marca.carregar_yaml_simples(
+                f'tipografia:\n  fontes_externas: {texto_verdadeiro}\n')
+            self.assertIs(cfg["tipografia"]["fontes_externas"], True, texto_verdadeiro)
+        for texto_falso in ('false', 'False', 'FALSE', 'no', 'off'):
+            cfg = aplicar_marca.carregar_yaml_simples(
+                f'tipografia:\n  fontes_externas: {texto_falso}\n')
+            self.assertIs(cfg["tipografia"]["fontes_externas"], False, texto_falso)
+
+    def test_le_arquivo_com_bom_sem_perder_a_primeira_chave(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            caminho = Path(pasta) / ".docs-brand.yml"
+            texto = 'projeto:\n  nome: "Projeto X"\n'
+            caminho.write_bytes(b'\xef\xbb\xbf' + texto.encode('utf-8'))
+            cfg = aplicar_marca.carregar_yaml(caminho)
+            self.assertEqual(cfg["projeto"]["nome"], "Projeto X")
+
     def test_comentario_de_linha_inteira_e_ignorado(self):
         texto = '# isto é um comentário\nprojeto:\n  nome: "X"\n'
         cfg = aplicar_marca.carregar_yaml_simples(texto)
@@ -107,7 +125,7 @@ class TesteMainAplicarMarca(unittest.TestCase):
         destino = self.raiz / "saida"
         codigo, _, erro = _rodar(str(destino), f"--raiz={self.raiz}")
         self.assertEqual(codigo, 1)
-        self.assertIn("docs-init", erro)
+        self.assertIn("report-creator", erro)
 
     def test_copia_os_assets_para_o_destino(self):
         self._gravar_yaml_minimo()

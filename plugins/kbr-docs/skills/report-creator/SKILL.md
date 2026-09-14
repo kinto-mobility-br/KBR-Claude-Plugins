@@ -18,7 +18,7 @@ layout novo** — se o pedido é um documento, comece por aqui.
 
 **Descobrir — não grava nada:**
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/scripts/descobrir.py" .
+python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/descobrir.py" .
 ```
 O script varre o repositório e mostra o que encontrou: logos (ignorando `node_modules`,
 `dist`, `.venv` e afins), qual serve a que fundo — claro/escuro —, a cor de marca amostrada do
@@ -31,7 +31,7 @@ logo, diga isso — o documento sai com o placeholder, e é melhor que a pessoa 
 
 **Gravar:**
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/scripts/descobrir.py" . --escrever
+python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/descobrir.py" . --escrever
 ```
 Não sobrescreve um `.docs-brand.yml` existente. Depois de gravado, a pessoa pode editar à mão
 o que faltou — é um YAML (um subconjunto dele, veja "Detalhes que costumam morder"), e os
@@ -40,7 +40,7 @@ comentários dizem para que serve cada campo.
 ### 2. Gerar o documento
 
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/scripts/aplicar_marca.py" docs/<assunto> --raiz=.
+python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/aplicar_marca.py" docs/<assunto> --raiz=.
 # páginas extras já criadas a partir do modelo:
 #   --paginas=01-visao,02-arquitetura,03-operacao
 ```
@@ -127,7 +127,8 @@ saida:        pasta                    # onde os conjuntos de documentos nascem
 - **Exemplos de código:** sempre nas três linguagens (Python, Java, C#) pelo componente
   `.codetabs`, quando o assunto comportar.
 - **Componentes: COPIE a marcação, não escreva de cabeça.** Abra
-  `referencia/componentes.html`, copie o bloco do componente e troque só o texto. Tem
+  `${CLAUDE_PLUGIN_ROOT}/skills/report-creator/referencia/componentes.html`, copie o bloco do
+  componente e troque só o texto. Tem
   callouts, tabelas, badges, steps, tabs, FAQ, timeline, stat/feature/hero cards, kbd,
   codetabs e gráficos em CSS puro (barras, progress, donut, gauge, heatmap).
 
