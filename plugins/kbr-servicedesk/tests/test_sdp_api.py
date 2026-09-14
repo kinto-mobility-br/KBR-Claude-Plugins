@@ -28,8 +28,27 @@ class RespostaFalsa(io.BytesIO):
         return False
 
 
+class RespostaBruta(io.BytesIO):
+    """Como RespostaFalsa, mas grava bytes crus (não JSON) — simula um proxy ou portal
+    cativo respondendo 200 no lugar do ServiceDesk."""
+
+    def __init__(self, bruto: bytes, status=200):
+        super().__init__(bruto)
+        self.status = status
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+
 class RedeFalsa:
-    """Substitui sdp_api._abrir. Devolve as respostas na ordem da fila."""
+    """Substitui sdp_api._abrir. Devolve as respostas na ordem da fila.
+
+    Um item `bytes`/`bytearray` da fila vira uma resposta com corpo cru (não JSON);
+    qualquer outro item (dict) vira o de sempre, serializado em JSON.
+    """
 
     def __init__(self, *respostas):
         self.fila = list(respostas)
@@ -45,6 +64,8 @@ class RedeFalsa:
         proxima = self.fila.pop(0)
         if isinstance(proxima, Exception):
             raise proxima
+        if isinstance(proxima, (bytes, bytearray)):
+            return RespostaBruta(bytes(proxima))
         return RespostaFalsa(proxima)
 
 
@@ -131,6 +152,28 @@ class TesteToken(BaseSDP):
             sdp_api.access_token()
         self.assertIn("configurar", str(caso.exception))
 
+    def test_cache_com_expira_em_nao_numerico_busca_token_novo(self):
+        # expira_em não é número (ex.: arquivo corrompido) — cache vale como ausente.
+        caminho = kbr_secrets.caminho_cache() / "sdp_access_token.json"
+        caminho.write_text(json.dumps({"access_token": "velho", "expira_em": "abc"}),
+                           encoding="utf-8")
+        self.rede({"access_token": "novo", "expires_in": 3600})
+        self.assertEqual(sdp_api.access_token(), "novo")
+
+    def test_cache_que_e_uma_lista_busca_token_novo(self):
+        # JSON válido, mas não é objeto — cache vale como ausente.
+        caminho = kbr_secrets.caminho_cache() / "sdp_access_token.json"
+        caminho.write_text(json.dumps(["nao", "e", "um", "dict"]), encoding="utf-8")
+        self.rede({"access_token": "novo", "expires_in": 3600})
+        self.assertEqual(sdp_api.access_token(), "novo")
+
+    def test_cache_que_e_uma_string_crua_busca_token_novo(self):
+        # JSON válido, mas é uma string solta — cache vale como ausente.
+        caminho = kbr_secrets.caminho_cache() / "sdp_access_token.json"
+        caminho.write_text(json.dumps("apenas uma string"), encoding="utf-8")
+        self.rede({"access_token": "novo", "expires_in": 3600})
+        self.assertEqual(sdp_api.access_token(), "novo")
+
 
 class TesteErros(unittest.TestCase):
     def test_codigo_expirado(self):
@@ -172,20 +215,62 @@ class TesteErros(unittest.TestCase):
         self.assertNotIn("NAO-DEVE-APARECER", texto)
 
     def test_response_status_com_tipo_inesperado_nao_quebra(self):
-        # response_status não é dict: não pode lançar AttributeError.
-        texto = sdp_api.traduzir("sdp", {"response_status": "formato inesperado"}, http=400)
+        # response_status não é dict: não pode lançar AttributeError nem ecoar o valor bruto.
+        texto = sdp_api.traduzir("sdp", {"response_status": "NAO-DEVE-APARECER"}, http=400)
         self.assertIsInstance(texto, str)
+        self.assertTrue(texto)
+        self.assertNotIn("NAO-DEVE-APARECER", texto)
 
     def test_messages_com_item_que_nao_e_dict_nao_quebra(self):
-        # um item da lista messages não é dict: não pode lançar AttributeError.
+        # um item da lista messages não é dict: não pode lançar AttributeError nem ecoar o
+        # valor bruto do item.
         texto = sdp_api.traduzir(
-            "sdp", {"response_status": {"messages": [123, None, "str"]}}, http=400)
+            "sdp", {"response_status": {"messages": [123, None, "NAO-DEVE-APARECER"]}}, http=400)
         self.assertIsInstance(texto, str)
+        self.assertTrue(texto)
+        self.assertNotIn("NAO-DEVE-APARECER", texto)
 
     def test_erro_da_zoho_aninhado_nao_vaza_estrutura(self):
         # corpo["error"] vindo como dict (em vez de string curta) não pode ser ecoado.
         texto = sdp_api.traduzir("zoho", {"error": {"vazou": "NAO-DEVE-APARECER"}})
         self.assertNotIn("NAO-DEVE-APARECER", texto)
+
+
+class TesteCorpoNaoJson(BaseSDP):
+    """Resposta 200 cujo corpo não é JSON — o retrato de um proxy ou portal cativo
+    respondendo no lugar do ServiceDesk."""
+
+    CORPO_HTML = b"<html><body>Faca login na rede Wi-Fi para continuar</body></html>"
+
+    def test_postar_form_com_200_html_vira_errosdp(self):
+        self.rede(self.CORPO_HTML)
+        with self.assertRaises(sdp_api.ErroSDP) as caso:
+            sdp_api._postar_form(sdp_api.PADRAO_CONFIG["token_url"], {"grant_type": "x"})
+        texto = str(caso.exception)
+        self.assertTrue(texto)
+        self.assertNotIn("<html>", texto)
+        self.assertIn("proxy", texto.lower())
+
+    def test_access_token_com_200_html_vira_errosdp_nao_jsondecodeerror(self):
+        # access_token() chama _postar_form por baixo; o corpo HTML tem que virar ErroSDP,
+        # nunca um json.JSONDecodeError cru.
+        self.rede(self.CORPO_HTML)
+        with self.assertRaises(sdp_api.ErroSDP) as caso:
+            sdp_api.access_token()
+        texto = str(caso.exception)
+        self.assertTrue(texto)
+        self.assertNotIn("<html>", texto)
+
+    def test_chamar_com_200_html_vira_errosdp(self):
+        rede = self.rede({"access_token": "acc-1", "expires_in": 3600}, self.CORPO_HTML)
+        token = sdp_api.access_token()
+        with self.assertRaises(sdp_api.ErroSDP) as caso:
+            sdp_api.chamar("GET", "/requests/123", None, token)
+        texto = str(caso.exception)
+        self.assertTrue(texto)
+        self.assertNotIn("<html>", texto)
+        self.assertIn("proxy", texto.lower())
+        self.assertEqual(len(rede.chamadas), 2)
 
 
 if __name__ == "__main__":

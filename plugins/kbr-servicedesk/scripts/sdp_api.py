@@ -46,14 +46,19 @@ class ErroSDP(Exception):
 
 # --------------------------------------------------------------------------- config
 
+def _ler_json_do_arquivo(caminho: Path) -> dict:
+    """Lê e decodifica o JSON de `caminho`; ausente ou corrompido vira dict vazio."""
+    if not caminho.exists():
+        return {}
+    try:
+        return json.loads(caminho.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+
+
 def ler_config() -> dict:
     caminho = kbr_secrets.caminho_config()
-    dados: dict = {}
-    if caminho.exists():
-        try:
-            dados = json.loads(caminho.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            dados = {}
+    dados = _ler_json_do_arquivo(caminho)
     config = dict(PADRAO_CONFIG)
     config.update(dados.get(CHAVE_CONFIG) or {})
     return config
@@ -61,12 +66,7 @@ def ler_config() -> dict:
 
 def gravar_config(novos: dict) -> None:
     caminho = kbr_secrets.caminho_config()
-    dados: dict = {}
-    if caminho.exists():
-        try:
-            dados = json.loads(caminho.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            dados = {}
+    dados = _ler_json_do_arquivo(caminho)
     atual = dict(PADRAO_CONFIG)
     atual.update(dados.get(CHAVE_CONFIG) or {})
     atual.update(novos)
@@ -125,6 +125,10 @@ def traduzir(origem: str, corpo: dict, http: int = 0) -> str:
     if origem == "rede":
         return ("Não consegui falar com o ServiceDesk. Confira a conexão e a VPN, se você "
                 "usa, e tente de novo.")
+    if origem == "resposta_nao_json":
+        return ("A resposta não veio em JSON — não parece ter sido o ServiceDesk quem "
+                "respondeu. Isso costuma acontecer quando um proxy ou portal cativo intercepta "
+                "a conexão. Confira a conexão e a VPN, se você usa, e tente de novo.")
     if origem == "zoho":
         erro_bruto = corpo.get("error")
         codigo = erro_bruto.strip() if isinstance(erro_bruto, str) else ""
@@ -156,7 +160,8 @@ def _postar_form(url: str, campos: dict) -> tuple[int, dict]:
     requisicao = urllib.request.Request(url, data=dados, method="POST")
     try:
         with _abrir(requisicao, timeout=60) as resposta:
-            return getattr(resposta, "status", 200), json.loads(resposta.read())
+            status = getattr(resposta, "status", 200)
+            corpo_bruto = resposta.read()
     except urllib.error.HTTPError as erro:
         try:
             return erro.code, json.loads(erro.read())
@@ -164,6 +169,12 @@ def _postar_form(url: str, campos: dict) -> tuple[int, dict]:
             return erro.code, {}
     except urllib.error.URLError:
         raise ErroSDP(traduzir("rede", {})) from None
+    # Resposta 200, mas o corpo não é JSON: proxy ou portal cativo respondeu no lugar do
+    # ServiceDesk. Vira ErroSDP em vez de deixar o JSONDecodeError escapar cru.
+    try:
+        return status, json.loads(corpo_bruto)
+    except json.JSONDecodeError:
+        raise ErroSDP(traduzir("resposta_nao_json", {})) from None
 
 
 def _caminho_cache_token() -> Path:
@@ -171,6 +182,9 @@ def _caminho_cache_token() -> Path:
 
 
 def _token_em_cache() -> str | None:
+    """Lê o token cacheado. Qualquer cache que não dá para entender — arquivo ausente,
+    JSON corrompido, JSON que não é objeto ou `expira_em` que não é número — vale como
+    cache ausente: devolve None em vez de levantar, e quem chama busca um token novo."""
     caminho = _caminho_cache_token()
     if not caminho.exists():
         return None
@@ -178,7 +192,13 @@ def _token_em_cache() -> str | None:
         dados = json.loads(caminho.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return None
-    if float(dados.get("expira_em", 0)) - time.time() < MARGEM_RENOVACAO:
+    if not isinstance(dados, dict):
+        return None
+    try:
+        expira_em = float(dados.get("expira_em", 0))
+    except (TypeError, ValueError):
+        return None
+    if expira_em - time.time() < MARGEM_RENOVACAO:
         return None
     return dados.get("access_token") or None
 
@@ -234,8 +254,8 @@ def chamar(metodo: str, caminho: str, input_data: dict | None, token: str) -> tu
     requisicao.add_header("Accept", ACEITA)
     try:
         with _abrir(requisicao) as resposta:
-            return getattr(resposta, "status", 200), json.loads(
-                resposta.read().decode("utf-8", "replace"))
+            status = getattr(resposta, "status", 200)
+            corpo_bruto = resposta.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as erro:
         try:
             return erro.code, json.loads(erro.read().decode("utf-8", "replace"))
@@ -243,3 +263,9 @@ def chamar(metodo: str, caminho: str, input_data: dict | None, token: str) -> tu
             return erro.code, {}
     except urllib.error.URLError:
         raise ErroSDP(traduzir("rede", {})) from None
+    # Resposta 200, mas o corpo não é JSON: proxy ou portal cativo respondeu no lugar do
+    # ServiceDesk. Vira ErroSDP em vez de deixar o JSONDecodeError escapar cru.
+    try:
+        return status, json.loads(corpo_bruto)
+    except json.JSONDecodeError:
+        raise ErroSDP(traduzir("resposta_nao_json", {})) from None
