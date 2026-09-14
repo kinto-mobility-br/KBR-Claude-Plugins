@@ -496,6 +496,90 @@ def cmd_detalhe(args) -> int:
     return 0
 
 
+def entidades(texto: str) -> str:
+    """Converte não-ASCII em entidades numéricas.
+
+    O SDP renderiza acento de forma inconsistente conforme o cliente; entidade
+    numérica sempre aparece certo.
+    """
+    return "".join(letra if ord(letra) < 128 else f"&#{ord(letra)};" for letra in texto)
+
+
+def _ler_html(caminho: str) -> str:
+    arquivo = Path(caminho)
+    if not arquivo.is_file():
+        raise ErroSDP(f"Não encontrei o arquivo com o texto: {caminho}")
+    conteudo = arquivo.read_text(encoding="utf-8").strip()
+    if not conteudo:
+        raise ErroSDP("O arquivo com o texto está vazio.")
+    return conteudo
+
+
+def _simular(acao: str, numero: str, **extras) -> int:
+    _imprimir({"simulacao": True, "acao": acao, "chamado": numero,
+               "aviso": "nada foi enviado ao ServiceDesk; repita com --confirmar", **extras})
+    return 0
+
+
+def _enviar(metodo: str, caminho: str, payload: dict, token: str, acao: str,
+            numero: str) -> int:
+    status, corpo = chamar(metodo, caminho, payload, token)
+    if status >= 300:
+        raise ErroSDP(traduzir("sdp", corpo, http=status))
+    _imprimir({"enviado": True, "acao": acao, "chamado": numero,
+               "resposta": campo(corpo or {}, "response_status", "status") or "ok"})
+    return 0
+
+
+def cmd_nota(args) -> int:
+    conteudo = _ler_html(args.arquivo)
+    token = access_token()
+    interno = _id_obrigatorio(args.numero, token)
+    visivel = bool(args.visivel_solicitante)
+    if not args.confirmar:
+        return _simular("adicionar nota", args.numero,
+                        visivel_ao_solicitante=visivel,
+                        previa=limpo(conteudo, 600))
+    payload = {"request_note": {
+        "description": entidades(conteudo),
+        "show_to_requester": visivel,
+        "mark_first_response": False,
+        "add_to_linked_requests": False,
+    }}
+    return _enviar("POST", f"/requests/{interno}/notes", payload, token,
+                   "adicionar nota", args.numero)
+
+
+def cmd_status(args) -> int:
+    novo = args.status
+    espera = novo.strip().lower() in STATUS_DE_ESPERA
+    if espera and not (args.comentario or "").strip():
+        raise ErroSDP(f"O status \"{novo}\" é de espera: o ServiceDesk exige um comentário "
+                      f"dizendo o motivo. Passe --comentario.")
+    token = access_token()
+    interno = _id_obrigatorio(args.numero, token)
+    if not args.confirmar:
+        return _simular("mudar status", args.numero, novo_status=novo,
+                        comentario=args.comentario)
+    corpo_request: dict = {"status": {"name": novo}}
+    if espera:
+        corpo_request["onhold_scheduler"] = {"comments": args.comentario}
+    return _enviar("PUT", f"/requests/{interno}", {"request": corpo_request}, token,
+                   "mudar status", args.numero)
+
+
+def cmd_resolver(args) -> int:
+    conteudo = _ler_html(args.arquivo)
+    token = access_token()
+    interno = _id_obrigatorio(args.numero, token)
+    if not args.confirmar:
+        return _simular("resolver chamado", args.numero, previa=limpo(conteudo, 600))
+    payload = {"request": {"status": {"name": "Resolved"},
+                           "resolution": {"content": entidades(conteudo)}}}
+    return _enviar("PUT", f"/requests/{interno}", payload, token,
+                   "resolver chamado", args.numero)
+
+
 # --------------------------------------------------------------------------- entrada
 
 def _imprimir(dados: dict) -> None:
@@ -516,10 +600,29 @@ def construir_parser() -> argparse.ArgumentParser:
     detalhe.add_argument("numero")
     detalhe.add_argument("--notas", type=int, default=8)
 
+    nota = sub.add_parser("nota", help="acrescenta uma nota ao chamado")
+    nota.add_argument("numero")
+    nota.add_argument("--arquivo", required=True, help="arquivo com o HTML da nota")
+    nota.add_argument("--visivel-solicitante", action="store_true",
+                      dest="visivel_solicitante")
+    nota.add_argument("--confirmar", action="store_true")
+
+    status_cmd = sub.add_parser("status", help="muda o status do chamado")
+    status_cmd.add_argument("numero")
+    status_cmd.add_argument("status")
+    status_cmd.add_argument("--comentario", default="")
+    status_cmd.add_argument("--confirmar", action="store_true")
+
+    resolver = sub.add_parser("resolver", help="resolve o chamado com um texto de conclusão")
+    resolver.add_argument("numero")
+    resolver.add_argument("--arquivo", required=True, help="arquivo com o HTML da conclusão")
+    resolver.add_argument("--confirmar", action="store_true")
+
     return parser
 
 
-COMANDOS = {"testar": cmd_testar, "listar": cmd_listar, "detalhe": cmd_detalhe}
+COMANDOS = {"testar": cmd_testar, "listar": cmd_listar, "detalhe": cmd_detalhe,
+            "nota": cmd_nota, "status": cmd_status, "resolver": cmd_resolver}
 
 
 def main(argumentos: list[str] | None = None) -> int:

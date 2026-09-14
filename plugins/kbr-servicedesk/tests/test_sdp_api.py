@@ -495,6 +495,115 @@ class TesteTestar(BaseComando):
         self.assertIn("técnico", self.json_da_saida(saida)["erro"].lower())
 
 
+class TesteEscrita(BaseComando):
+    BUSCA = {"requests": [{"id": "173861000000000001", "display_id": "4942"}]}
+    OK = {"response_status": {"status": "success"}, "request_note": {"id": "n1"}}
+
+    def arquivo_html(self, conteudo="<p>Olá, tudo certo.</p>"):
+        caminho = Path(self.tmp.name) / "nota.html"
+        caminho.write_text(conteudo, encoding="utf-8")
+        return str(caminho)
+
+    def test_nota_sem_confirmar_nao_escreve(self):
+        rede = self.rede(TOKEN_OK, self.BUSCA)
+        codigo, saida = self.executar("nota", "4942", "--arquivo", self.arquivo_html())
+        self.assertEqual(codigo, 0)
+        self.assertTrue(self.json_da_saida(saida)["simulacao"])
+        self.assertTrue(all(c["metodo"] == "GET" for c in rede.chamadas[1:]))
+
+    def test_nota_com_confirmar_posta(self):
+        rede = self.rede(TOKEN_OK, self.BUSCA, self.OK)
+        codigo, _ = self.executar("nota", "4942", "--arquivo", self.arquivo_html(),
+                                  "--confirmar")
+        self.assertEqual(codigo, 0)
+        envio = rede.chamadas[-1]
+        self.assertEqual(envio["metodo"], "POST")
+        self.assertIn("/notes", envio["url"])
+        payload = json.loads(urllib.parse.parse_qs(envio["corpo"])["input_data"][0])
+        self.assertIn("request_note", payload)
+        self.assertFalse(payload["request_note"]["show_to_requester"])
+
+    def test_nota_visivel_ao_solicitante(self):
+        rede = self.rede(TOKEN_OK, self.BUSCA, self.OK)
+        self.executar("nota", "4942", "--arquivo", self.arquivo_html(),
+                      "--visivel-solicitante", "--confirmar")
+        payload = json.loads(
+            urllib.parse.parse_qs(rede.chamadas[-1]["corpo"])["input_data"][0])
+        self.assertTrue(payload["request_note"]["show_to_requester"])
+
+    def test_acentos_viram_entidades(self):
+        rede = self.rede(TOKEN_OK, self.BUSCA, self.OK)
+        self.executar("nota", "4942", "--arquivo",
+                      self.arquivo_html("<p>informação</p>"), "--confirmar")
+        payload = json.loads(
+            urllib.parse.parse_qs(rede.chamadas[-1]["corpo"])["input_data"][0])
+        descricao = payload["request_note"]["description"]
+        self.assertIn("&#231;", descricao)
+        self.assertNotIn("ç", descricao)
+
+    def test_arquivo_inexistente(self):
+        self.rede(TOKEN_OK)
+        codigo, saida = self.executar("nota", "4942", "--arquivo", "nao-existe.html",
+                                      "--confirmar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("não encontrei", self.json_da_saida(saida)["erro"].lower())
+
+    def test_status_simples(self):
+        rede = self.rede(TOKEN_OK, self.BUSCA, {"response_status": {"status": "success"}})
+        self.executar("status", "4942", "In Progress", "--confirmar")
+        envio = rede.chamadas[-1]
+        self.assertEqual(envio["metodo"], "PUT")
+        payload = json.loads(urllib.parse.parse_qs(envio["corpo"])["input_data"][0])
+        self.assertEqual(payload["request"]["status"]["name"], "In Progress")
+        self.assertNotIn("onhold_scheduler", payload["request"])
+
+    def test_status_sem_confirmar_nao_escreve(self):
+        rede = self.rede(TOKEN_OK, self.BUSCA)
+        codigo, saida = self.executar("status", "4942", "In Progress")
+        self.assertEqual(codigo, 0)
+        self.assertTrue(self.json_da_saida(saida)["simulacao"])
+        self.assertTrue(all(c["metodo"] == "GET" for c in rede.chamadas[1:]))
+
+    def test_status_de_espera_exige_comentario(self):
+        self.rede(TOKEN_OK, self.BUSCA)
+        codigo, saida = self.executar("status", "4942", "On Hold", "--confirmar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("comentário", self.json_da_saida(saida)["erro"].lower())
+
+    def test_status_de_espera_com_comentario_manda_onhold(self):
+        rede = self.rede(TOKEN_OK, self.BUSCA, {"response_status": {"status": "success"}})
+        self.executar("status", "4942", "Aguardando Aprovação",
+                      "--comentario", "esperando validação", "--confirmar")
+        payload = json.loads(
+            urllib.parse.parse_qs(rede.chamadas[-1]["corpo"])["input_data"][0])
+        self.assertEqual(payload["request"]["onhold_scheduler"]["comments"],
+                         "esperando validação")
+
+    def test_resolver_manda_status_e_resolution(self):
+        rede = self.rede(TOKEN_OK, self.BUSCA, {"response_status": {"status": "success"}})
+        self.executar("resolver", "4942", "--arquivo", self.arquivo_html(), "--confirmar")
+        payload = json.loads(
+            urllib.parse.parse_qs(rede.chamadas[-1]["corpo"])["input_data"][0])
+        self.assertEqual(payload["request"]["status"]["name"], "Resolved")
+        self.assertIn("content", payload["request"]["resolution"])
+
+    def test_resolver_sem_confirmar_nao_escreve(self):
+        rede = self.rede(TOKEN_OK, self.BUSCA)
+        codigo, saida = self.executar("resolver", "4942", "--arquivo", self.arquivo_html())
+        self.assertEqual(codigo, 0)
+        self.assertTrue(self.json_da_saida(saida)["simulacao"])
+        self.assertTrue(all(c["metodo"] == "GET" for c in rede.chamadas[1:]))
+
+    def test_erro_do_sdp_na_escrita_vira_portugues(self):
+        self.rede(TOKEN_OK, self.BUSCA, urllib.error.HTTPError(
+            "u", 400, "Bad", {},
+            io.BytesIO(json.dumps({"response_status": {"messages": [
+                {"message": "status inválido"}]}}).encode())))
+        codigo, saida = self.executar("status", "4942", "Inexistente", "--confirmar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("status inválido", self.json_da_saida(saida)["erro"])
+
+
 class TesteLimpo(unittest.TestCase):
     def test_quebra_de_linha_e_entidades(self):
         texto = sdp_api.limpo("<p>um</p><br/><div>dois &amp; três</div>")
