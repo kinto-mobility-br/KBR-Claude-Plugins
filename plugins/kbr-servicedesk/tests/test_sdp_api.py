@@ -814,7 +814,7 @@ class TesteEscopos(BaseComando):
 
 class TesteBuscarQuery(BaseSDP):
     def test_periodo_usa_uma_unica_condicao_between(self):
-        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        rede = self.rede(CHAMADO_QUERY)
         sdp_api._buscar_query(
             "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
             "created_time", None, False)
@@ -827,7 +827,7 @@ class TesteBuscarQuery(BaseSDP):
         self.assertNotIn("less than", condicoes)
 
     def test_sem_periodo_nao_manda_criterio_de_data(self):
-        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        rede = self.rede(CHAMADO_QUERY)
         sdp_api._buscar_query("acc-1", None, None, "created_time", None, True)
         entrada = json.loads(urllib.parse.parse_qs(
             rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
@@ -836,7 +836,7 @@ class TesteBuscarQuery(BaseSDP):
         self.assertNotIn("resolved_time", campos)
 
     def test_campo_data_resolved_time(self):
-        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        rede = self.rede(CHAMADO_QUERY)
         sdp_api._buscar_query(
             "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
             "resolved_time", None, False)
@@ -846,7 +846,7 @@ class TesteBuscarQuery(BaseSDP):
         self.assertEqual(criterio["field"], "resolved_time")
 
     def test_abertos_exclui_status_finais(self):
-        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        rede = self.rede(CHAMADO_QUERY)
         sdp_api._buscar_query("acc-1", None, None, "created_time", None, True)
         entrada = json.loads(urllib.parse.parse_qs(
             rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
@@ -855,7 +855,7 @@ class TesteBuscarQuery(BaseSDP):
         self.assertEqual(criterio["values"], sdp_api.STATUS_FINAIS)
 
     def test_status_filtra_valor_exato(self):
-        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        rede = self.rede(CHAMADO_QUERY)
         sdp_api._buscar_query("acc-1", None, None, "created_time", "On Hold", False)
         entrada = json.loads(urllib.parse.parse_qs(
             rede.chamadas[0]["url"].split("?", 1)[1])["input_data"][0])
@@ -864,7 +864,7 @@ class TesteBuscarQuery(BaseSDP):
         self.assertEqual(criterio["value"], "On Hold")
 
     def test_sem_status_nem_abertos_nao_filtra_status(self):
-        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        rede = self.rede(CHAMADO_QUERY)
         sdp_api._buscar_query(
             "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
             "created_time", None, False)
@@ -874,7 +874,7 @@ class TesteBuscarQuery(BaseSDP):
         self.assertNotIn("status.name", campos)
 
     def test_nao_filtra_por_tecnico(self):
-        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        rede = self.rede(CHAMADO_QUERY)
         sdp_api._buscar_query(
             "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
             "created_time", None, False)
@@ -884,7 +884,7 @@ class TesteBuscarQuery(BaseSDP):
         self.assertNotIn("technician.name", campos)
 
     def test_fields_required_cobre_todas_as_colunas_do_csv(self):
-        rede = self.rede(TOKEN_OK, CHAMADO_QUERY)
+        rede = self.rede(CHAMADO_QUERY)
         sdp_api._buscar_query(
             "acc-1", sdp_api._data_para_ms("2026-09-01"), sdp_api._data_para_ms("2026-10-01"),
             "created_time", None, False)
