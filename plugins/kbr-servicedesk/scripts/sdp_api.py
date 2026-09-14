@@ -342,6 +342,13 @@ def _buscar_chamados(token: str, status_pedido: str | None, todos: bool) -> list
         criterios.append({"field": "status.name", "condition": "is",
                           "value": status_pedido, "logical_operator": "AND"})
     elif not todos:
+        # Não verificado contra o SDP real (Task 9, Step 5 — sem credenciais neste ambiente).
+        # Se o SDP recusar "is not" com "values" (lista), trocar por três critérios
+        # encadeados, um por status, com "value" (singular) cada:
+        #     for final in STATUS_FINAIS:
+        #         criterios.append({"field": "status.name", "condition": "is not",
+        #                           "value": final, "logical_operator": "AND"})
+        # e ajustar test_exclui_status_finais_por_padrao para conferir os três nomes na URL.
         criterios.append({"field": "status.name", "condition": "is not",
                           "values": STATUS_FINAIS, "logical_operator": "AND"})
     reunidos: list[dict] = []
