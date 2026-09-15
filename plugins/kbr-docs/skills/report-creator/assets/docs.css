@@ -312,6 +312,25 @@ body{overflow:hidden}
 }
 .theme-toggle button svg{width:14px;height:14px}
 
+/* Menu toggle — mesmo componente visual do theme-toggle, classe própria */
+.menu-toggle{
+  display:inline-grid;grid-template-columns:1fr 1fr;
+  background:var(--surface-3);border:1px solid var(--border);
+  border-radius:var(--r-pill);padding:3px;cursor:pointer;
+  font-family:var(--font);
+}
+.menu-toggle button{
+  background:transparent;border:0;cursor:pointer;
+  padding:4px 8px;border-radius:var(--r-pill);
+  color:var(--meta);font-size:12px;display:inline-flex;align-items:center;gap:4px;
+  transition:all .2s ease;
+}
+:root[data-menu="vertical"]   .menu-toggle button[data-set="vertical"],
+:root[data-menu="horizontal"] .menu-toggle button[data-set="horizontal"]{
+  background:var(--surface);color:var(--brand);box-shadow:var(--shadow-1);font-weight:600;
+}
+.menu-toggle button svg{width:14px;height:14px}
+
 /* Sidebar nav */
 .side h6{font-size:11px;color:var(--meta);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin:18px 0 6px}
 .side ul{list-style:none;margin:0;padding:0}

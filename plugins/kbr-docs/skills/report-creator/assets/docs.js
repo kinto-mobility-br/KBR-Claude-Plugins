@@ -22,6 +22,18 @@
     });
   });
 
+  // Menu horizontal/vertical — mesmo padrão do tema, sem transição especial
+  const KEY_MENU = 'kinto-menu';
+  const savedMenu = localStorage.getItem(KEY_MENU) || 'vertical';
+  root.setAttribute('data-menu', savedMenu);
+  document.querySelectorAll('.menu-toggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      const next = b.getAttribute('data-set');
+      root.setAttribute('data-menu', next);
+      localStorage.setItem(KEY_MENU, next);
+    });
+  });
+
   // Copy de blocos de código
   document.querySelectorAll('.copy[data-copy]').forEach(btn => {
     btn.addEventListener('click', () => {
