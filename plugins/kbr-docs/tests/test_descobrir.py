@@ -203,3 +203,7 @@ class TesteMain(unittest.TestCase):
         canonico = self.raiz / ".claude" / "plugins-data" / "kbr-docs" / "docs-brand.yml"
         self.assertFalse(canonico.exists())
         self.assertEqual(legado.read_text(encoding="utf-8"), "conteudo legado\n")
+
+
+if __name__ == "__main__":
+    unittest.main()

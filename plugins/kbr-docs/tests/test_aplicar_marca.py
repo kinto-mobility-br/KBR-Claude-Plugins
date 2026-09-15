@@ -269,3 +269,7 @@ class TesteCascataViaMain(unittest.TestCase):
         self.assertEqual(codigo, 0)
         # avatar é um campo de arquivo, então gera nota de "nível de usuário"
         self.assertIn("nível de usuário", saida)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -39,7 +39,7 @@ logo, diga isso — o documento sai com o placeholder, e é melhor que a pessoa 
 ```bash
 python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/descobrir.py" . --escrever
 ```
-Não sobrescreve um `.docs-brand.yml` existente. Depois de gravado, a pessoa pode editar à mão
+Recusa gravar (sem sobrescrever nada) se já existir um arquivo — canônico ou legado. Depois de gravado, a pessoa pode editar à mão
 o que faltou — é um YAML (um subconjunto dele, veja "Detalhes que costumam morder"), e os
 comentários dizem para que serve cada campo.
 
@@ -70,6 +70,7 @@ a lista de seções e o Front Matter pode entrar como primeira seção.
 
 ```
 scripts/
+  resolver_marca.py      cascata de três níveis (projeto→usuário→placeholder); `python resolver_marca.py <raiz>` mostra o efetivo sem gravar
   descobrir.py           descobre marca/logo/nome e escreve .docs-brand.yml
   aplicar_marca.py        gera o conjunto de documentos a partir do .docs-brand.yml
 assets/
@@ -102,9 +103,13 @@ tiver o campo preenchido vence:
 
 A mescla é campo a campo: um projeto pode definir só o logo e herdar
 autoria/contato do nível de usuário — não precisa repetir tudo em cada
-repositório. Caminho de arquivo (logo, avatar) sempre resolve relativo à
-pasta de ONDE aquele campo veio, nunca contra a raiz do projeto quando vier
-do usuário.
+repositório. A resolução de caminho de arquivo (logo, avatar) é assimétrica
+por design: no nível de PROJETO resolve contra a RAIZ do projeto (mesmo no
+canônico, que vive em `.claude/plugins-data/kbr-docs/` — é o que mantém
+compatibilidade com os caminhos que `descobrir.py` já grava); no nível de
+USUÁRIO resolve contra a pasta que contém o `docs-brand.yml` dele
+(`~/.claude/plugins-data/kbr-docs/`), seguindo a convenção de pasta
+estruturada.
 
 `python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/resolver_marca.py" <raiz>`
 mostra o efetivo (já mesclado) sem gravar nada — use isso, não `descobrir.py`, pra ver
@@ -129,7 +134,8 @@ saida:        pasta                    # onde os conjuntos de documentos nascem
   aponta para arquivo que exista — e, nesse caso, o aviso aparece no relatório da geração.
 - **Nada é chutado em silêncio.** Valor que não veio do repositório entra marcado com
   `# SUGESTÃO — confira`.
-- **Um arquivo por projeto, na raiz.** Ele é a fonte da verdade da identidade.
+- **Um arquivo por NÍVEL.** O efetivo é a mescla, campo a campo, dos que existirem —
+  veja "Os três níveis de configuração" acima.
 - **Versione o `.docs-brand.yml`.** Ele é configuração de projeto, não segredo.
 - **O leitor é um subconjunto de YAML, não um parser completo.** Suporta mapeamentos
   aninhados até 3 níveis, valores entre aspas duplas ou booleano (`true`/`yes`/`on` e

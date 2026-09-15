@@ -20,7 +20,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -38,21 +37,6 @@ PADRAO_NOME = re.compile(r'logo|marca|brand|símbolo|simbolo|wordmark', re.I)
 # Pistas no nome do arquivo sobre o fundo a que o logo se destina.
 PARA_FUNDO_ESCURO = re.compile(r'branco|white|light[-_]?on|dark[-_]?bg|escuro|invert|neg', re.I)
 PARA_FUNDO_CLARO = re.compile(r'preto|black|blue|azul|color|colorido|dark[-_]?on|light[-_]?bg|claro|pos', re.I)
-
-
-# --------------------------------------------------------------------- raiz --
-def raiz_do_projeto(inicio: Path) -> Path:
-    """A raiz do repositório, ou o diretório dado se não houver git."""
-    try:
-        saida = subprocess.run(
-            ['git', 'rev-parse', '--show-toplevel'],
-            cwd=inicio, capture_output=True, text=True, timeout=10,
-        )
-        if saida.returncode == 0 and saida.stdout.strip():
-            return Path(saida.stdout.strip())
-    except (OSError, subprocess.SubprocessError):
-        pass
-    return inicio.resolve()
 
 
 def caminhar(raiz: Path):
@@ -252,7 +236,9 @@ def montar_yaml(raiz: Path, nome: str, origem_nome: str,
 # na descoberta de marca, em {raiz.name} — daqui para a frente, editável à mão.
 #
 # Duas regras que valem para o arquivo inteiro:
-#   · caminho é sempre relativo à RAIZ do projeto (onde este arquivo está);
+#   · caminho é sempre relativo à RAIZ do projeto (não à pasta deste arquivo);
+#     no nível de usuário (~/.claude/plugins-data/kbr-docs/) a regra é a
+#     oposta: relativo à PASTA deste arquivo;
 #   · campo vazio tem comportamento definido — está dito em cada um. Nenhum
 #     deles quebra a geração.
 #
@@ -340,7 +326,7 @@ def main() -> int:
             pass
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     escrever = '--escrever' in sys.argv
-    raiz = raiz_do_projeto(Path(args[0] if args else '.'))
+    raiz = resolver_marca.raiz_do_projeto(Path(args[0] if args else '.'))
 
     nome, origem = nome_do_projeto(raiz)
     logos = achar_logos(raiz)

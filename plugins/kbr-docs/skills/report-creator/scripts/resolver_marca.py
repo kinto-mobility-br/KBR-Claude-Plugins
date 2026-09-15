@@ -1,12 +1,36 @@
 #!/usr/bin/env python3
 """
-Resolve o config efetivo de marca do `kbr-docs` — por enquanto, só o parser de
-YAML (movido de `aplicar_marca.py`). A cascata de três níveis entra na Task 2.
+Resolve o config efetivo de marca do `kbr-docs`: mescla, campo a campo, o nível de
+projeto (canônico ou legado) com o nível de usuário — o projeto sempre vence quando
+não-vazio; nada é gravado.
+
+Uso:
+    python resolver_marca.py <pasta-dentro-do-projeto>
+
+Mostra os dois locais do nível de projeto (canônico e legado) e o do usuário, cada
+um com se existe ou não, e o efetivo já mesclado — com os campos de arquivo (logo,
+avatar) já resolvidos pra absoluto. Não recebe `--raiz=`; o argumento pode ser
+qualquer pasta dentro do projeto, a raiz do git é descoberta automaticamente (mesmo
+comportamento de `aplicar_marca.py` e `descobrir.py`).
 """
 from __future__ import annotations
 
+import os
+import subprocess
 import sys
 from pathlib import Path
+
+
+# ------------------------------------------------------------------------ raiz --
+def raiz_do_projeto(inicio: Path) -> Path:
+    try:
+        r = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+                           cwd=inicio, capture_output=True, text=True, timeout=10)
+        if r.returncode == 0 and r.stdout.strip():
+            return Path(r.stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return inicio.resolve()
 
 
 # --------------------------------------------------------------------- YAML --
@@ -75,8 +99,6 @@ def carregar_yaml(caminho: Path) -> dict:
     return carregar_yaml_simples(caminho.read_text(encoding='utf-8-sig'))
 
 
-import os
-
 NOME_ARQUIVO = 'docs-brand.yml'
 CAMPOS_DE_ARQUIVO = (('logo', 'claro'), ('logo', 'escuro'), ('autoria', 'avatar'))
 
@@ -90,6 +112,12 @@ def caminho_projeto(raiz: Path) -> Path:
 def caminho_projeto_legado(raiz: Path) -> Path:
     """<raiz>/.docs-brand.yml — retrocompatibilidade com o formato de hoje."""
     return raiz / '.docs-brand.yml'
+
+
+def caminho_projeto_efetivo(raiz: Path) -> Path:
+    """Canônico, se existir; senão o legado (existente ou não) — é o que resolver() lê."""
+    canonico = caminho_projeto(raiz)
+    return canonico if canonico.exists() else caminho_projeto_legado(raiz)
 
 
 def pasta_usuario() -> Path:
@@ -165,9 +193,7 @@ def resolver(raiz: Path) -> tuple[dict, list[str]]:
     """
     notas: list[str] = []
 
-    caminho_proj = caminho_projeto(raiz)
-    if not caminho_proj.exists():
-        caminho_proj = caminho_projeto_legado(raiz)
+    caminho_proj = caminho_projeto_efetivo(raiz)
     cfg_projeto = carregar_yaml(caminho_proj) if caminho_proj.exists() else {}
     if cfg_projeto:
         _absolutizar_campos_de_arquivo(cfg_projeto, raiz)
@@ -198,17 +224,17 @@ def main() -> int:
     if not args:
         print(__doc__)
         return 2
-    raiz = Path(args[0]).resolve()
+    raiz = raiz_do_projeto(Path(args[0]))
     efetivo, notas = resolver(raiz)
 
-    caminho_proj = caminho_projeto(raiz)
-    if not caminho_proj.exists():
-        caminho_proj = caminho_projeto_legado(raiz)
+    canonico = caminho_projeto(raiz)
+    legado = caminho_projeto_legado(raiz)
     caminho_usr = caminho_usuario()
 
-    print(f'raiz do projeto  : {raiz}')
-    print(f'projeto (nível 1): {caminho_proj} ({"existe" if caminho_proj.exists() else "não existe"})')
-    print(f'usuário (nível 2): {caminho_usr} ({"existe" if caminho_usr.exists() else "não existe"})')
+    print(f'raiz do projeto      : {raiz}')
+    print(f'projeto canônico     : {canonico} ({"existe" if canonico.exists() else "não existe"})')
+    print(f'projeto legado (raiz): {legado} ({"existe" if legado.exists() else "não existe"})')
+    print(f'usuário              : {caminho_usr} ({"existe" if caminho_usr.exists() else "não existe"})')
     print()
     if not efetivo:
         print('(nada configurado em nenhum nível — só o placeholder da skill)')

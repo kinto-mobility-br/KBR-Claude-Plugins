@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import re
 import shutil
-import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -36,17 +35,6 @@ COMENTARIO_DO_MODELO = r'<!--\s*=+\s*\n.*?MODELO DE DOCUMENTO.*?-->\s*\n'
 # `aplicar_marca.carregar_yaml`/`carregar_yaml_simples` continuar funcionando.
 import resolver_marca
 from resolver_marca import carregar_yaml, carregar_yaml_simples  # noqa: F401
-
-
-def raiz_do_projeto(inicio: Path) -> Path:
-    try:
-        r = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                           cwd=inicio, capture_output=True, text=True, timeout=10)
-        if r.returncode == 0 and r.stdout.strip():
-            return Path(r.stdout.strip())
-    except (OSError, subprocess.SubprocessError):
-        pass
-    return inicio.resolve()
 
 
 # ---------------------------------------------------------------- CSS marca --
@@ -229,7 +217,7 @@ def main() -> int:
 
     opc = {a.split('=')[0]: a.split('=', 1)[1] if '=' in a else ''
            for a in sys.argv[1:] if a.startswith('--')}
-    raiz = raiz_do_projeto(Path(opc.get('--raiz', '.')))
+    raiz = resolver_marca.raiz_do_projeto(Path(opc.get('--raiz', '.')))
 
     if resolver_marca.nenhum_nivel_configurado(raiz):
         print(f'Não achei marca nenhuma para {raiz} (nem projeto, nem nível de usuário).\n'
