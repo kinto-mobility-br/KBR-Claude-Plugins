@@ -170,7 +170,7 @@ saida:        pasta                    # onde os conjuntos de documentos nascem
   (`vertical`/`horizontal`), chave `kinto-menu`.
 - Logo de marca costuma ser um PNG grande. Acima de 500 KB o script avisa — vale gerar uma
   versão reduzida só para a documentação. A foto do autor tem o mesmo aviso a partir de
-  300 KB: ela aparece em 48px, recortada no centro.
+  300 KB: ela aparece em 32px, recortada no centro.
 - **A folha impressa é sempre clara**, mesmo com o leitor no tema escuro: o `@media print`
   redefine os tokens na raiz, e a marca clara é repetida ali porque `brand.css` é carregado
   depois do `docs.css`. Header, sidebar, TOC e o botão de copiar somem; o bloco de código

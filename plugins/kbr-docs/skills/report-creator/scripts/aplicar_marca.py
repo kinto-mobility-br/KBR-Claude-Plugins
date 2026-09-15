@@ -174,10 +174,10 @@ def instalar_avatar(cfg: dict, raiz: Path, destino: Path) -> tuple[str, list[str
     notas = [f'avatar: {rel} → assets/{alvo.name}']
     if alvo.stat().st_size > 300_000:
         notas.append(f'   ⚠ {alvo.name} tem {alvo.stat().st_size // 1024} KB — '
-                     f'a foto aparece em 48px; vale reduzir')
+                     f'a foto aparece em 32px; vale reduzir')
     alt = f'{nome}, autor do documento' if nome else 'Autor do documento'
     return (f'<img class="avatar" src="assets/{alvo.name}" alt="{alt}" '
-            f'width="48" height="48" loading="lazy">'), notas
+            f'width="32" height="32" loading="lazy">'), notas
 
 
 def instalar_logos(cfg: dict, raiz: Path, destino: Path) -> list[str]:
