@@ -1,7 +1,7 @@
 {
   "name": "kbr-docs",
   "displayName": "KINTO — Documentação",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Gera documentação em HTML com o design system oficial da KINTO — descobre a marca do projeto na primeira vez e gera os documentos a partir daí.",
   "author": {
     "name": "KINTO Brasil — TI"
