@@ -10,9 +10,15 @@ layout novo** — se o pedido é um documento, comece por aqui.
 
 ## Fluxo
 
-1. Confira se `.docs-brand.yml` existe na raiz do projeto.
-2. **Não existe:** descubra a marca primeiro (seção 1 abaixo), depois siga para a geração.
-3. **Já existe:** vá direto para a geração (seção 2).
+1. Confira se já existe config de marca — em qualquer um dos três níveis (veja
+   "Os três níveis" abaixo). O jeito mais rápido é rodar o resolver:
+   `python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/resolver_marca.py" .`
+   — ele mostra o efetivo (projeto mesclado com o nível de usuário) sem gravar nada.
+2. **Nada configurado (nem projeto, nem usuário):** descubra a marca do projeto
+   primeiro (seção 1 abaixo), depois siga para a geração.
+3. **Já existe algo** (mesmo que só no nível de usuário): vá direto para a
+   geração (seção 2) — e, ao perguntar o que falta preencher, **não pergunte
+   de novo** o que o resolver já mostrou como preenchido pelo nível de usuário.
 
 ### 1. Descobrir a marca (só na primeira vez por projeto)
 
@@ -78,6 +84,31 @@ templates/
 referencia/
   componentes.html      galeria navegável de TODOS os componentes — consulte antes de inventar
 ```
+
+## Os três níveis de configuração
+
+Cada campo do `.docs-brand.yml` é resolvido nesta ordem — o primeiro nível que
+tiver o campo preenchido vence:
+
+1. **Projeto** — `<raiz>/.claude/plugins-data/kbr-docs/docs-brand.yml` (canônico).
+   Se não existir, `<raiz>/.docs-brand.yml` (formato de antes desta cascata —
+   continua funcionando, sem prazo pra sumir).
+2. **Usuário** — `~/.claude/plugins-data/kbr-docs/docs-brand.yml`. Preenchido à
+   mão (sem descoberta automática) — é o lugar certo pra guardar um default
+   pessoal (nome, cargo, e-mail, até logo/cor próprios) que se aplica a
+   qualquer projeto que não tenha configurado a própria marca.
+3. **Placeholder do plugin** — só pra logo (`logo-claro.svg`/`logo-escuro.svg`),
+   quando nem projeto nem usuário tiverem um.
+
+A mescla é campo a campo: um projeto pode definir só o logo e herdar
+autoria/contato do nível de usuário — não precisa repetir tudo em cada
+repositório. Caminho de arquivo (logo, avatar) sempre resolve relativo à
+pasta de ONDE aquele campo veio, nunca contra a raiz do projeto quando vier
+do usuário.
+
+`python resolver_marca.py <raiz>` mostra o efetivo (já mesclado) sem gravar
+nada — use isso, não `descobrir.py`, pra ver o que já está coberto antes de
+perguntar à pessoa o que falta.
 
 ## O que o `.docs-brand.yml` guarda
 
