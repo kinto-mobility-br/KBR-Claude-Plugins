@@ -2,6 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Nota de emenda (pós-revisão da Task 5):** este plano (Tasks 1-4) esqueceu de implementar
+> o CLI `main()` de `resolver_marca.py` que a spec aprovada sempre exigiu ("invocável como
+> `python resolver_marca.py <raiz>` como dry-run"). O gap só apareceu quando a revisão da
+> Task 5 tentou de fato RODAR o comando que o `SKILL.md` novo instrui — ele não imprimia nada.
+> Corrigido como extensão da própria Task 5 (commit `449f616`): `main()` acrescentado ao FINAL
+> de `resolver_marca.py` (pura adição, nenhuma função das Tasks 1-2 foi tocada, confirmado por
+> diff pelo revisor) + 3 testes novos (`TesteMainResolverMarca`) + a contradição correspondente
+> na seção "2. Gerar o documento" do `SKILL.md` (ainda citava o fluxo antigo). As Tasks 1-5
+> abaixo NÃO foram reescritas — são o histórico fiel do que foi revisado no momento; o `main()`
+> em si não tem uma Task própria porque nasceu como correção, não como planejamento.
+
 **Goal:** Fazer o `kbr-docs` resolver cada campo de marca numa cascata de três níveis — projeto (`.claude/plugins-data/kbr-docs/`, com retrocompatibilidade pro `.docs-brand.yml` legado da raiz) → usuário (`~/.claude/plugins-data/kbr-docs/`) → placeholder do plugin (só logo) — em vez de olhar só pro arquivo da raiz do projeto.
 
 **Architecture:** Um módulo novo, `resolver_marca.py`, dentro do mesmo `scripts/` dos outros dois scripts do plugin (é código dividido dentro do MESMO plugin — não é o caso da regra "plugin autocontido", que é sobre não ler arquivo de OUTRO plugin). Ele passa a ser o dono do parser de YAML (movido de `aplicar_marca.py`, que passa a importar de lá) e ganha a lógica de mescla campo a campo + resolução de caminho de arquivo relativo à pasta de origem. `descobrir.py` e `aplicar_marca.py` passam a chamar esse módulo em vez de ler o arquivo direto.
