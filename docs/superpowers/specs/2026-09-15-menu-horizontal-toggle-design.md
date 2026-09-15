@@ -97,7 +97,11 @@ duas variáveis pra calcular a sangria — ver 2.5), e `.toc` some (`display:non
 ### 2.4 CSS — `.side` como barra horizontal
 
 Sob `:root[data-menu="horizontal"]`, `.side`:
-- vira `position:sticky;top:var(--hdr-h)` (cola embaixo do cabeçalho, não no topo absoluto);
+- vira `position:sticky;top:0` — o contêiner de rolagem do sticky é o `.shell` (que já começa
+  exatamente onde o cabeçalho termina), não o viewport; `top:0` cola na borda superior do
+  próprio `.shell`, mesma regra que o modo vertical já usa hoje. `top:var(--hdr-h)` contaria a
+  altura do cabeçalho duas vezes e abriria um vão permanente entre header e faixa — achado na
+  revisão da Task 1, corrigido antes da Task 2;
 - o `<nav>`/`<ul>` internos viram `display:flex;flex-direction:row`, com os `<li><a>` como
   pills horizontais (`overflow-x:auto` na linha, pra não quebrar em telas estreitas — mesmo
   padrão de "não wrap, rola" que outras faixas do design system já usam, ex. `.codetabs-bar`);

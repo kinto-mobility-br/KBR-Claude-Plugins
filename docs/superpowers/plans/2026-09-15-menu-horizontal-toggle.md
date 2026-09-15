@@ -90,7 +90,7 @@ por:
 :root[data-menu="horizontal"] .shell{--side-w:0px;--toc-w:0px;grid-template-columns:1fr}
 :root[data-menu="horizontal"] .toc{display:none}
 :root[data-menu="horizontal"] .side{
-  position:sticky;top:var(--hdr-h);z-index:40;
+  position:sticky;top:0;z-index:40;overflow:hidden;
   border-right:0;border-bottom:1px solid var(--border);
   padding:0 var(--gap-lg);height:48px;max-height:none;
   display:flex;align-items:center;
@@ -104,6 +104,10 @@ por:
 ```
 
 Note que `.shell` sem `.toc` (que fica `display:none`) e com `grid-template-columns:1fr` empilha `.side` e `.content` em duas LINHAS pela ordem em que já aparecem no HTML — não precisa de `grid-template-areas` nem `grid-template-rows` explícitos.
+
+`top:0`, e não `top:var(--hdr-h)`: o contêiner de rolagem do `position:sticky` do `.side` é o `.shell` (que já tem `overflow-y:auto`), não o viewport — e o `.shell` já começa exatamente onde o `.hdr` termina (`.hdr` é um `sticky` à parte, fora do `.shell`). `top:0` cola o `.side` na borda superior do PRÓPRIO `.shell`, que visualmente já é a borda inferior do cabeçalho — exatamente como o modo vertical já faz hoje (`.side{position:sticky;top:0;...}`, veja a regra sem o `data-menu`). Somar `var(--hdr-h)` de novo aqui contaria a altura do cabeçalho duas vezes e abriria um vão permanente de 56px entre o cabeçalho e a faixa, em qualquer posição de rolagem — não é um detalhe cosmético do carregamento inicial, é a lacuna que apareceria sempre.
+
+`overflow:hidden` no `.side`: sem isso, a regra base do `.side` (fora deste bloco) já define `overflow:auto`, herdada aqui — com a altura fixa em 48px, uma lista de navegação mais longa poderia abrir uma barra de rolagem vertical indesejada na própria faixa. Quem rola horizontalmente é o `<nav>` interno (`overflow-x:auto`, linha acima), não o `.side`.
 
 - [ ] **Step 3: Rodar `testar.py` e `validar.py --strict` — nada em Python muda, então nada deve quebrar**
 
