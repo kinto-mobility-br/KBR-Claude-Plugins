@@ -106,13 +106,6 @@ def caminho_usuario() -> Path:
     return pasta_usuario() / NOME_ARQUIVO
 
 
-def _base_usuario() -> Path:
-    """A pasta de referência para resolver caminhos do nível de usuário
-    (CLAUDE_USER_HOME ou ~, sem .claude/plugins-data/kbr-docs)."""
-    override = os.environ.get('CLAUDE_USER_HOME')
-    return Path(override) if override else Path.home()
-
-
 def nenhum_nivel_configurado(raiz: Path) -> bool:
     """True quando nem projeto (canônico ou legado) nem usuário têm arquivo."""
     return not (
@@ -125,7 +118,11 @@ def nenhum_nivel_configurado(raiz: Path) -> bool:
 # ------------------------------------------------------------------- mescla --
 def _absolutizar_campos_de_arquivo(cfg: dict, base: Path) -> None:
     """Muda `cfg` no lugar: cada campo de arquivo não-vazio vira caminho absoluto
-    contra `base` — a pasta de ONDE ESSE `cfg` veio, não a raiz do projeto."""
+    contra `base`. O comportamento é assimétrico por design:
+    - Para PROJETO: `base` é a raiz do projeto (caminhos relativos à raiz, compatível com
+      `descobrir.py`).
+    - Para USUÁRIO: `base` é a pasta de config (~/.claude/plugins-data/kbr-docs/), caminhos
+      relativos aos arquivos do usuário, seguindo a convenção de pasta estruturada."""
     for secao, campo in CAMPOS_DE_ARQUIVO:
         bloco = cfg.get(secao)
         if not isinstance(bloco, dict):
@@ -177,7 +174,7 @@ def resolver(raiz: Path) -> tuple[dict, list[str]]:
     caminho_usr = caminho_usuario()
     cfg_usuario = carregar_yaml(caminho_usr) if caminho_usr.exists() else {}
     if cfg_usuario:
-        _absolutizar_campos_de_arquivo(cfg_usuario, _base_usuario())
+        _absolutizar_campos_de_arquivo(cfg_usuario, caminho_usr.parent)
 
     efetivo = _mesclar(cfg_projeto, cfg_usuario)
 

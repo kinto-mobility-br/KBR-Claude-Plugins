@@ -120,7 +120,8 @@ class TesteResolverMescla(BaseComRaizEUsuario):
 
 class TesteCaminhoDeArquivoAbsolutizado(BaseComRaizEUsuario):
     def test_logo_do_usuario_resolve_contra_a_pasta_do_usuario(self):
-        logo_usuario = Path(self.tmp_usuario.name) / "minha-logo.svg"
+        logo_usuario = resolver_marca.caminho_usuario().parent / "minha-logo.svg"
+        logo_usuario.parent.mkdir(parents=True, exist_ok=True)
         logo_usuario.write_text("<svg></svg>", encoding="utf-8")
         self._gravar_projeto('logo:\n  claro: ""\n')
         self._gravar_usuario('logo:\n  claro: "minha-logo.svg"\n')
