@@ -241,7 +241,7 @@ body{overflow:hidden}
 :root[data-menu="horizontal"] .shell{--side-w:0px;--toc-w:0px;grid-template-columns:1fr}
 :root[data-menu="horizontal"] .toc{display:none}
 :root[data-menu="horizontal"] .side{
-  position:sticky;top:var(--hdr-h);z-index:40;
+  position:sticky;top:0;z-index:40;overflow:hidden;
   border-right:0;border-bottom:1px solid var(--border);
   padding:0 var(--gap-lg);height:48px;max-height:none;
   display:flex;align-items:center;
