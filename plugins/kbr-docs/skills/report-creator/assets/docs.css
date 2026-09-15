@@ -231,6 +231,26 @@ body{overflow:hidden}
 .hdr .btn-hdr.outline{background:transparent;color:var(--text);border-color:var(--border-strong)}
 .hdr .btn-hdr.outline:hover{border-color:var(--brand);color:var(--brand)}
 .content{min-height:calc(100vh - var(--hdr-h));padding:var(--gap-xl) var(--gap-2xl) 0}
+
+/* =====================================================================
+   MENU HORIZONTAL — alternativa à sidebar vertical. Ligado por
+   data-menu="horizontal" no <html>, escrito por docs.js e persistido em
+   localStorage (chave kinto-menu) — mesmo mecanismo do data-theme.
+   ===================================================================== */
+:root[data-menu="horizontal"]{--measure:760px}
+:root[data-menu="horizontal"] .shell{--side-w:0px;--toc-w:0px;grid-template-columns:1fr}
+:root[data-menu="horizontal"] .toc{display:none}
+:root[data-menu="horizontal"] .side{
+  position:sticky;top:var(--hdr-h);z-index:40;
+  border-right:0;border-bottom:1px solid var(--border);
+  padding:0 var(--gap-lg);height:48px;max-height:none;
+  display:flex;align-items:center;
+}
+:root[data-menu="horizontal"] .side h6{display:none}
+:root[data-menu="horizontal"] .side nav{width:100%;overflow-x:auto}
+:root[data-menu="horizontal"] .side ul{display:flex;flex-direction:row;gap:6px;white-space:nowrap}
+:root[data-menu="horizontal"] .side li a{white-space:nowrap}
+
 /* Footer mora dentro da coluna central (rola junto) e sangra até as bordas dela */
 /* O rodapé atravessa a página inteira, e não só a coluna de leitura: ele é o
    fecho do documento, não mais um bloco do texto. Continua DENTRO do <main>
