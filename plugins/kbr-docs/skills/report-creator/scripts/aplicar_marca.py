@@ -33,6 +33,7 @@ COMENTARIO_DO_MODELO = r'<!--\s*=+\s*\n.*?MODELO DE DOCUMENTO.*?-->\s*\n'
 # O parser mora em resolver_marca.py (é ele quem também resolve a cascata de
 # três níveis) — reexportado aqui pra quem já importa
 # `aplicar_marca.carregar_yaml`/`carregar_yaml_simples` continuar funcionando.
+import resolver_marca
 from resolver_marca import carregar_yaml, carregar_yaml_simples  # noqa: F401
 
 
@@ -92,9 +93,13 @@ def css_da_marca(marca: dict) -> str:
 
 
 # -------------------------------------------------------------------- logos --
-def instalar_avatar(cfg: dict, raiz: Path, destino: Path) -> tuple[str, list[str]]:
+def instalar_avatar(cfg: dict, destino: Path) -> tuple[str, list[str]]:
     """
     Copia a foto do autor, quando houver. Devolve o HTML do avatar e o relatório.
+
+    `cfg['autoria']['avatar']` já chega em caminho ABSOLUTO (ou vazio) —
+    `resolver_marca.resolver()` já decidiu de qual nível ele vem e já
+    absolutizou contra a pasta certa antes de devolver o config.
 
     Sem foto — ou com um caminho que não existe — voltam as iniciais, que é o
     estado normal e não um defeito: nem todo documento tem retrato do autor.
@@ -106,7 +111,7 @@ def instalar_avatar(cfg: dict, raiz: Path, destino: Path) -> tuple[str, list[str
 
     if not rel:
         return iniciaisHtml, []
-    origem = (raiz / rel).resolve()
+    origem = Path(rel)
     if not origem.exists():
         return iniciaisHtml, [f'avatar: "{rel}" não existe — usando as iniciais']
 
@@ -121,15 +126,20 @@ def instalar_avatar(cfg: dict, raiz: Path, destino: Path) -> tuple[str, list[str
             f'width="32" height="32" loading="lazy">'), notas
 
 
-def instalar_logos(cfg: dict, raiz: Path, destino: Path) -> list[str]:
-    """Copia os logos do projeto sobre os placeholders. Devolve o relatório."""
+def instalar_logos(cfg: dict, destino: Path) -> list[str]:
+    """
+    Copia os logos do projeto sobre os placeholders. Devolve o relatório.
+
+    `cfg['logo']['claro']`/`['escuro']` já chegam em caminho ABSOLUTO (ou
+    vazio) — ver `instalar_avatar`.
+    """
     notas = []
     for chave, alvo_base in (('claro', 'logo-claro'), ('escuro', 'logo-escuro')):
         rel = (cfg.get('logo') or {}).get(chave) or ''
         if not rel:
-            notas.append(f'logo {chave}: NÃO definido no YAML — usando o placeholder da skill')
+            notas.append(f'logo {chave}: NÃO definido em nenhum nível — usando o placeholder da skill')
             continue
-        origem = (raiz / rel).resolve()
+        origem = Path(rel)
         if not origem.exists():
             notas.append(f'logo {chave}: "{rel}" não existe — usando o placeholder da skill')
             continue
@@ -220,12 +230,12 @@ def main() -> int:
            for a in sys.argv[1:] if a.startswith('--')}
     raiz = raiz_do_projeto(Path(opc.get('--raiz', '.')))
 
-    yml = raiz / '.docs-brand.yml'
-    if not yml.exists():
-        print(f'Não achei {yml}.\nInvoque a skill /kbr-docs:report-creator — ela descobre os '
+    if resolver_marca.nenhum_nivel_configurado(raiz):
+        print(f'Não achei marca nenhuma para {raiz} (nem projeto, nem nível de usuário).\n'
+              f'Invoque a skill /kbr-docs:report-creator — ela descobre os '
               f'logos e a marca deste projeto na primeira vez.', file=sys.stderr)
         return 1
-    cfg = carregar_yaml(yml)
+    cfg, notas_nivel = resolver_marca.resolver(raiz)
 
     destino.mkdir(parents=True, exist_ok=True)
     (destino / 'assets').mkdir(exist_ok=True)
@@ -233,9 +243,10 @@ def main() -> int:
     for arq in (SKILL / 'assets').iterdir():
         shutil.copy2(arq, destino / 'assets' / arq.name)
 
-    notas = instalar_logos(cfg, raiz, destino)
-    avatarHtml, notasAvatar = instalar_avatar(cfg, raiz, destino)
+    notas = instalar_logos(cfg, destino)
+    avatarHtml, notasAvatar = instalar_avatar(cfg, destino)
     notas += notasAvatar
+    notas += notas_nivel
 
     # para onde os <img> devem apontar depois da cópia
     def caminho_logo(base: str) -> str:

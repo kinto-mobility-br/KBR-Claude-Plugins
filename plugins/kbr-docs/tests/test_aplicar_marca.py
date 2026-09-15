@@ -2,6 +2,7 @@
 """Testes da geração de documentos (aplicar_marca.py)."""
 import contextlib
 import io
+import os
 import sys
 import tempfile
 import unittest
@@ -113,9 +114,17 @@ class TesteMainAplicarMarca(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.raiz = Path(self.tmp.name)
+        # Isola do nível de usuário real (~/.claude/plugins-data/kbr-docs/) --
+        # sem isso, esta suíte lê o que houver na máquina de quem rodar.
+        self.tmp_usuario = tempfile.TemporaryDirectory()
+        self._env_anterior = dict(os.environ)
+        os.environ["CLAUDE_USER_HOME"] = self.tmp_usuario.name
 
     def tearDown(self):
+        os.environ.clear()
+        os.environ.update(self._env_anterior)
         self.tmp.cleanup()
+        self.tmp_usuario.cleanup()
 
     def _gravar_yaml_minimo(self, extra: str = "") -> None:
         (self.raiz / ".docs-brand.yml").write_text(
@@ -189,3 +198,45 @@ class TesteMainAplicarMarca(unittest.TestCase):
         index_html = (destino / "index.html").read_text(encoding="utf-8")
         self.assertNotIn("fonts.googleapis.com", index_html)
         self.assertNotIn("fonts.gstatic.com", index_html)
+
+
+class TesteCascataViaMain(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.raiz = Path(self.tmp.name)
+        self.tmp_usuario = tempfile.TemporaryDirectory()
+        self._env_anterior = dict(os.environ)
+        os.environ["CLAUDE_USER_HOME"] = self.tmp_usuario.name
+
+    def tearDown(self):
+        os.environ.clear()
+        os.environ.update(self._env_anterior)
+        self.tmp.cleanup()
+        self.tmp_usuario.cleanup()
+
+    def test_autor_do_nivel_de_usuario_chega_ao_html_gerado(self):
+        # projeto define o nome, mas deixa autoria em branco
+        caminho_projeto = self.raiz / ".claude" / "plugins-data" / "kbr-docs" / "docs-brand.yml"
+        caminho_projeto.parent.mkdir(parents=True)
+        caminho_projeto.write_text(
+            'projeto:\n  nome: "Projeto X"\n'
+            'logo:\n  claro: ""\n  escuro: ""\n'
+            'marca:\n  claro:\n    brand: "#336699"\n'
+            '  escuro:\n    brand: "#5C9BC9"\n'
+            'textos:\n  rodape: "rodape"\n'
+            'autoria:\n  autor: ""\n'
+            'contato:\n  email: ""\n'
+            'tipografia:\n  fontes_externas: true\n',
+            encoding="utf-8")
+
+        # usuario define o autor
+        caminho_usuario = Path(self.tmp_usuario.name) / ".claude" / "plugins-data" / "kbr-docs" / "docs-brand.yml"
+        caminho_usuario.parent.mkdir(parents=True)
+        caminho_usuario.write_text('autoria:\n  autor: "Autor Pessoal"\n', encoding="utf-8")
+
+        destino = self.raiz / "saida"
+        codigo, saida, _ = _rodar(str(destino), f"--raiz={self.raiz}")
+        self.assertEqual(codigo, 0)
+        html = (destino / "index.html").read_text(encoding="utf-8")
+        self.assertIn("Autor Pessoal", html)
+        self.assertIn("nível de usuário", saida)  # citado no relatório
