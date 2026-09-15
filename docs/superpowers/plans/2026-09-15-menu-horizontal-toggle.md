@@ -434,7 +434,20 @@ Confirme que existe, hoje, exatamente isto:
     <div class="theme-toggle" role="group" aria-label="Tema">
 ```
 
-Troque pelo MESMO bloco do Step 1 (idêntico).
+Troque por:
+
+```html
+  <div class="hdr-actions">
+    <div class="menu-toggle" role="group" aria-label="Menu">
+      <button data-set="vertical" aria-label="Menu vertical">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      </button>
+      <button data-set="horizontal" aria-label="Menu horizontal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+      </button>
+    </div>
+    <div class="theme-toggle" role="group" aria-label="Tema">
+```
 
 - [ ] **Step 3: Rodar `testar.py` e `validar.py --strict`**
 
