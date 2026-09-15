@@ -23,9 +23,12 @@ navegador:
    alterna entre os dois modos.
 2. Modo horizontal: os mesmos links de navegação (Front Matter / Índice / Documento / …)
    saem da sidebar e formam uma faixa 100% da largura, colada embaixo do cabeçalho, sempre
-   visível ao rolar (sticky). O TOC da direita desaparece nesse modo. O texto corrido ganha
-   uma margem de leitura razoável (não fica esparramado de ponta a ponta) — tabelas, código e
-   callouts continuam podendo usar a largura toda, como já fazem hoje.
+   visível ao rolar (sticky). **O TOC da direita permanece nos dois modos** (revisto em
+   2026-09-15, depois do Fábio ver o resultado — decisão original era esconder o TOC no modo
+   horizontal, revertida) — conteúdo e TOC formam duas colunas na linha de baixo, com a faixa
+   do menu ocupando as duas por cima. O texto corrido ganha uma margem de leitura razoável
+   (não fica esparramado de ponta a ponta) — tabelas, código e callouts continuam podendo usar
+   a largura toda, como já fazem hoje.
 3. Modo vertical: exatamente o comportamento de hoje, sem nenhuma mudança visual.
 4. A escolha persiste no navegador de quem lê (mesmo mecanismo do tema — `localStorage`),
    valendo para as páginas do mesmo conjunto de documentos. Sem escolha salva, abre no modo
@@ -38,7 +41,7 @@ navegador:
 | Decisão | Escolha | Por quê |
 |---|---|---|
 | Formato do modo horizontal | Faixa full-width colada embaixo do cabeçalho | Opção escolhida entre essa e "abas dentro do próprio cabeçalho" — mantém o cabeçalho intocado, mais simples de isolar em CSS |
-| TOC no modo horizontal | Desaparece | Sem a coluna direita, o conteúdo aproveita a largura liberada pela sidebar |
+| TOC no modo horizontal | Permanece (revisto 2026-09-15, depois do Fábio ver o resultado) | Decisão original era esconder — o Fábio pediu pra manter nos dois menus depois de ver o formato pronto no navegador |
 | Margem de leitura no modo horizontal | Sim, via token `--measure` | Pedido explícito ("respeitando uma margem razoável") — reaproveita o token que os componentes de texto corrido já leem, sem tocar em tabela/código/callout |
 | Comportamento ao rolar | Sticky, colado no cabeçalho | Opção escolhida entre essa e "rola junto com o conteúdo" |
 | Estado inicial (sem escolha salva) | Vertical | Não muda o padrão de quem já usa o plugin hoje |
@@ -85,14 +88,17 @@ currentColor` dos outros ícones do design system). Entra nos três templates
 (`documento-modelo.html`, `front-matter.html`, `index.html`), sempre à esquerda do alternador
 de tema.
 
-### 2.3 CSS — `.shell` com dois layouts via `grid-template-areas`
+### 2.3 CSS — `.shell` com dois layouts, TOC preservado
 
 Hoje: `.shell{grid-template-columns:var(--side-w) minmax(0,1fr) var(--toc-w)}`, três colunas
 lado a lado (`side | content | toc`).
 
-Modo horizontal (`:root[data-menu="horizontal"] .shell`): uma coluna, duas linhas — `side`
-em cima (spanning 100%), `content` embaixo. `--side-w`/`--toc-w` zeram (o rodapé usa essas
-duas variáveis pra calcular a sangria — ver 2.5), e `.toc` some (`display:none`).
+Modo horizontal (`:root[data-menu="horizontal"] .shell`): duas colunas (`content | toc`,
+`grid-template-columns:minmax(0,1fr) var(--toc-w)` — o TOC mantém a largura de sempre), com
+`.side` em `grid-column:1 / -1` pra ocupar as duas na linha de cima (a faixa do menu). Só
+`--side-w` zera (o rodapé usa essa variável pra calcular a sangria à esquerda — ver 2.5);
+`--toc-w` continua com o valor normal, porque o TOC não sai do layout, só desce pra debaixo da
+faixa do menu junto com o conteúdo.
 
 ### 2.4 CSS — `.side` como barra horizontal
 
@@ -116,8 +122,10 @@ tipo 760px, escolhido pra ficar confortável de ler sem sidebar/TOC descontando 
 código e callout continuam com `max-width:none` onde já está assim hoje — não mudam.
 
 O rodapé (`.content > .ds-footer`) já bleeda por baixo da sidebar/TOC via margem negativa
-calculada a partir de `--side-w`/`--toc-w`. Zerando as duas no modo horizontal (2.3), a mesma
-fórmula passa a bleedar só até a borda da página — sem ajuste extra.
+calculada a partir de `--side-w`/`--toc-w`. Como só `--side-w` zera no modo horizontal (2.3;
+`--toc-w` continua normal, porque o TOC fica), a sangria à esquerda passa a ir até a borda da
+página, e a sangria à direita continua igual à do modo vertical (por baixo do TOC, que
+permanece do mesmo tamanho) — sem ajuste extra na fórmula.
 
 ### 2.6 O que NÃO muda
 
@@ -147,8 +155,9 @@ Sem teste Python novo (CSS/JS/HTML estático, fora do que `testar.py` cobre). Ve
 - `testar.py` (257 testes) e `validar.py --strict` continuam limpos — nada em Python muda.
 - Verificação visual real no navegador (Playwright, como nas mudanças anteriores desta
   sessão): os dois modos, os dois temas (claro/escuro), nas 3 páginas geradas, confirmando
-  — barra horizontal sticky, TOC ausente, margem de leitura aplicada, rodapé sangrando até a
-  borda, e o modo vertical **idêntico** ao que já estava antes desta mudança.
+  — barra horizontal sticky ocupando conteúdo+TOC, TOC presente e com a largura normal nos
+  dois modos, margem de leitura aplicada, rodapé sangrando até a borda, e o modo vertical
+  **idêntico** ao que já estava antes desta mudança.
 
 ---
 

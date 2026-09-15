@@ -236,11 +236,14 @@ body{overflow:hidden}
    MENU HORIZONTAL — alternativa à sidebar vertical. Ligado por
    data-menu="horizontal" no <html>, escrito por docs.js e persistido em
    localStorage (chave kinto-menu) — mesmo mecanismo do data-theme.
+   O TOC (âncoras da página) continua nos dois modos — só a navegação
+   entre documentos (.side) é que troca de coluna vertical pra faixa
+   horizontal, ocupando as duas colunas (conteúdo + TOC) na linha de cima.
    ===================================================================== */
 :root[data-menu="horizontal"]{--measure:760px}
-:root[data-menu="horizontal"] .shell{--side-w:0px;--toc-w:0px;grid-template-columns:1fr}
-:root[data-menu="horizontal"] .toc{display:none}
+:root[data-menu="horizontal"] .shell{--side-w:0px;grid-template-columns:minmax(0,1fr) var(--toc-w)}
 :root[data-menu="horizontal"] .side{
+  grid-column:1 / -1;
   position:sticky;top:0;z-index:40;overflow:hidden;
   border-right:0;border-bottom:1px solid var(--border);
   padding:0 var(--gap-lg);height:48px;max-height:none;
