@@ -108,8 +108,8 @@ saida:        pasta                    # onde os conjuntos de documentos nascem
 
 ## Regras do padrão (não negociáveis)
 
-- **Header:** só logo (clicável, leva ao índice) + alternador de tema. Sem "Exportar", sem
-  "Compartilhar", sem busca.
+- **Header:** logo (clicável, leva ao índice) + alternador de menu (vertical/horizontal) +
+  alternador de tema. Sem "Exportar", sem "Compartilhar", sem busca.
 - **Front Matter é uma PÁGINA** (`front-matter.html`), **sempre o 1º link** do menu — nunca um
   bloco no topo dos outros documentos. Contém: ID, Título, Status, Versão, Classificação,
   Projeto/Área, Autor, Revisor/Aprovador, Criado em, Atualizado em, Tags, **Histórico de
@@ -120,7 +120,9 @@ saida:        pasta                    # onde os conjuntos de documentos nascem
 - **Status:** `Draft` (neutral) · `Em revisão` (warning) · `Published` (success) ·
   `Obsoleto` (danger).
 - **Navegação:** menu ESQUERDO = páginas do conjunto (um HTML por link, Front Matter primeiro);
-  menu DIREITO = âncoras da página atual. Nunca duplicar a mesma navegação nos dois.
+  menu DIREITO = âncoras da página atual (TOC). Nunca duplicar a mesma navegação nos dois. O
+  alternador de menu no cabeçalho troca o menu esquerdo entre sidebar vertical (padrão) e uma
+  faixa horizontal colada no cabeçalho — o TOC continua igual nos dois modos.
 - **Layout:** header fixo; sidebar e TOC `sticky`; quem rola é o shell. O `<footer>` fica
   **dentro** do `<main>` (rola junto) e sangra até as bordas da janela.
 - **Marca:** nunca escreva cor ou caminho de logo direto no HTML. Tudo vem do
@@ -163,7 +165,9 @@ saida:        pasta                    # onde os conjuntos de documentos nascem
 - O template carrega **Inter** e **JetBrains Mono** do Google Fonts. Documento que vá circular
   por e-mail ou rodar sem internet deve usar `tipografia.fontes_externas: false` no YAML — a
   geração remove os links e a página continua correta, só muda a tipografia.
-- O tema é escrito em `data-theme` no `<html>`; `docs.js` lembra a escolha em `localStorage`.
+- O tema é escrito em `data-theme` no `<html>`; `docs.js` lembra a escolha em `localStorage`
+  (chave `kinto-theme`). O modo do menu segue o mesmo padrão: `data-menu`
+  (`vertical`/`horizontal`), chave `kinto-menu`.
 - Logo de marca costuma ser um PNG grande. Acima de 500 KB o script avisa — vale gerar uma
   versão reduzida só para a documentação. A foto do autor tem o mesmo aviso a partir de
   300 KB: ela aparece em 48px, recortada no centro.
@@ -176,4 +180,5 @@ saida:        pasta                    # onde os conjuntos de documentos nascem
   vez de preenchidos sozinhos. Logo em `.svg` não depende disso (a cor é lida do próprio
   código do arquivo). Nunca trate a ausência de Pillow como erro — é o comportamento normal.
 - Ao publicar um conjunto novo, abra pelo menos uma página no navegador e confira: alternador
-  de tema, links da sidebar, âncoras do TOC e a impressão (Ctrl+P).
+  de tema, alternador de menu (vertical e horizontal), links da navegação nos dois modos,
+  âncoras do TOC nos dois modos, e a impressão (Ctrl+P).

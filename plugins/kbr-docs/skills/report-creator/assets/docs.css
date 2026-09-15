@@ -240,19 +240,26 @@ body{overflow:hidden}
    entre documentos (.side) é que troca de coluna vertical pra faixa
    horizontal, ocupando as duas colunas (conteúdo + TOC) na linha de cima.
    ===================================================================== */
-:root[data-menu="horizontal"]{--measure:760px}
+:root[data-menu="horizontal"]{--measure:760px;--menu-h:48px}
 :root[data-menu="horizontal"] .shell{--side-w:0px;grid-template-columns:minmax(0,1fr) var(--toc-w)}
 :root[data-menu="horizontal"] .side{
   grid-column:1 / -1;
   position:sticky;top:0;z-index:40;overflow:hidden;
   border-right:0;border-bottom:1px solid var(--border);
-  padding:0 var(--gap-lg);height:48px;max-height:none;
+  padding:0 var(--gap-lg);height:var(--menu-h);max-height:none;
   display:flex;align-items:center;
 }
 :root[data-menu="horizontal"] .side h6{display:none}
 :root[data-menu="horizontal"] .side nav{width:100%;overflow-x:auto}
 :root[data-menu="horizontal"] .side ul{display:flex;flex-direction:row;gap:6px;white-space:nowrap}
 :root[data-menu="horizontal"] .side li a{white-space:nowrap}
+/* O TOC fica embaixo da faixa (que tem sua própria altura --menu-h), não embaixo do
+   cabeçalho: sem isso os dois compartilham top:0 dentro do .shell e a faixa cobre o
+   topo do TOC ao rolar — achado na revisão final de branch. */
+:root[data-menu="horizontal"] .toc{
+  top:var(--menu-h);
+  max-height:calc(100vh - var(--hdr-h) - var(--menu-h));
+}
 
 /* Footer mora dentro da coluna central (rola junto) e sangra até as bordas dela */
 /* O rodapé atravessa a página inteira, e não só a coluna de leitura: ele é o
@@ -285,6 +292,12 @@ body{overflow:hidden}
   .hdr-brand{min-width:0;overflow:hidden}
   .doc-meta{min-width:0}
   .doc-meta b,.doc-meta small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+  /* Abaixo daqui o .shell para de ser o contêiner de rolagem (body{overflow:auto} +
+     height:auto acima) — o top:0 da faixa horizontal passaria a valer contra o
+     VIEWPORT, escondendo-a atrás do cabeçalho ao rolar. Mesma especificidade da regra
+     que liga a faixa, pra vencer o empate a favor desta — achado na revisão final de
+     branch. */
+  :root[data-menu="horizontal"] .side{position:static}
 }
 
 /* Header da sidebar */

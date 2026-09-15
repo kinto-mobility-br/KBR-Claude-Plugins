@@ -8,6 +8,19 @@
 
 **Tech Stack:** CSS/HTML/JS estático (sem framework, sem build step) — mesmas três pastas do plugin (`assets/`, `templates/`). Nenhum código Python muda.
 
+> **⚠️ EMENDA (2026-09-15, pós-entrega — leia antes de reusar este plano ou regerar um brief dele):**
+> as 4 tasks abaixo (texto original, histórico fiel do que foi implementado e revisado)
+> escondiam o `.toc` no modo horizontal (`--toc-w:0px`, `.toc{display:none}`, `grid-template-columns:1fr`)
+> e ancoravam a faixa horizontal com `top:0`. Depois de ver o resultado, o Fábio pediu para o
+> TOC continuar visível nos dois modos — revertido no commit `824998c`, que muda `.shell` pra
+> 2 colunas (`minmax(0,1fr) var(--toc-w)`) com `.side{grid-column:1/-1}`. A revisão final de
+> branch, feita sobre o estado JÁ COM essa mudança, achou dois bugs de posicionamento
+> (`.toc` colidindo com a faixa; faixa sumindo atrás do cabeçalho abaixo de 820px) e duas
+> lacunas de documentação (`SKILL.md`, `referencia/componentes.html`) — todos corrigidos em
+> commits separados. **O código de referência real é `docs.css`/`SKILL.md` no repositório, não
+> os blocos CSS abaixo** — use o `progress.md` (seção desta fatia) pra reconstruir a sequência
+> completa se precisar.
+
 ## Global Constraints
 
 - Spec aprovada: `docs/superpowers/specs/2026-09-15-menu-horizontal-toggle-design.md` — qualquer dúvida de comportamento, essa é a fonte da verdade.
@@ -396,7 +409,7 @@ pra vertical (sidebar 224px, TOC de volta) ao clicar no outro botao."
 
 ### Task 3: Propagar o botão para `front-matter.html` e `index.html`
 
-Mesma marcação exata da Task 3 (Step 3 da Task 2) — mecânica, sem lógica nova.
+Mesma marcação exata da Task 2 (Step 3 dela) — mecânica, sem lógica nova.
 
 **Files:**
 - Modify: `plugins/kbr-docs/skills/report-creator/templates/front-matter.html`
@@ -539,7 +552,7 @@ python -m http.server 8799 --bind 127.0.0.1 &
 Para cada uma das 3 páginas (`index.html`, `front-matter.html`, `documento-modelo.html`):
 
 1. Navegue até a página.
-2. Screenshot no modo vertical + tema claro (estado inicial, nada clicado) — confirme que é **pixel-a-pixel igual** ao que já existia antes desta fatia (cabeçalho 56px, sidebar 224px, TOC visível, rodapé 56px).
+2. Screenshot no modo vertical + tema claro (estado inicial, nada clicado) — confirme que o **layout é idêntico** ao que já existia antes desta fatia (cabeçalho 56px, sidebar 224px, TOC visível, rodapé 56px); o cabeçalho ganhou um controle novo (o alternador de menu), então "pixel-a-pixel" não se aplica ao cabeçalho em si.
 3. Clique no botão de tema escuro — screenshot vertical + escuro.
 4. Clique no botão de menu horizontal — screenshot horizontal + escuro.
 5. Clique no botão de tema claro (mantendo horizontal) — screenshot horizontal + claro.

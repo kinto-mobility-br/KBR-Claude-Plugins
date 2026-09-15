@@ -142,9 +142,14 @@ permanece do mesmo tamanho) — sem ajuste extra na fórmula.
 
 ## 3. Responsivo
 
-No breakpoint que já existe (`max-width:820px`, onde a sidebar vertical já vira estática e o
-TOC já desaparece), o modo horizontal continua funcionando pela mesma regra de
-`overflow-x:auto` da barra de pills (2.4) — não precisa de um breakpoint dedicado.
+A barra de pills usa `overflow-x:auto` (2.4) pra não quebrar em telas estreitas — isso
+sozinho não precisou de breakpoint dedicado. **Mas precisa de um breakpoint dedicado pra
+posição**, achado na revisão final de branch: abaixo de `max-width:820px` o `.shell` deixa de
+ser o contêiner de rolagem (`body{overflow:auto}` assume), e a faixa horizontal (`.side`,
+`position:sticky;top:0`) passa a ancorar no viewport em vez do `.shell` — sem ajuste, ela some
+atrás do cabeçalho ao rolar. Corrigido com `:root[data-menu="horizontal"] .side{position:
+static}` dentro do mesmo breakpoint (mesma especificidade da regra que liga a faixa, vence por
+ordem), coerente com o que o breakpoint já faz com sidebar/TOC no modo vertical.
 
 ---
 
@@ -166,6 +171,7 @@ Sem teste Python novo (CSS/JS/HTML estático, fora do que `testar.py` cobre). Ve
 - Qualquer terceiro modo de menu (ex. colapsável, "mini" sidebar apenas com ícones).
 - Persistir a escolha do lado do autor (`.docs-brand.yml`) — é preferência de quem LÊ, não do
   projeto.
-- Mudar o comportamento do TOC além de escondê-lo no modo horizontal.
+- Mudar o comportamento do TOC além de reposicioná-lo (colar embaixo da faixa horizontal em
+  vez do cabeçalho) — ele permanece visível e com a largura de sempre nos dois modos.
 - Tocar na skill pessoal `~/.claude/skills/docs-html` (fora do plugin, sem sincronização
   automática — risco já aceito e registrado na spec anterior do `kbr-docs`).
