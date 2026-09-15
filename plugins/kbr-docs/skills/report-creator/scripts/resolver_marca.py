@@ -5,6 +5,7 @@ YAML (movido de `aplicar_marca.py`). A cascata de três níveis entra na Task 2.
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 
@@ -185,3 +186,51 @@ def resolver(raiz: Path) -> tuple[dict, list[str]]:
             notas.append(f'{secao}.{campo}: nível de usuário ({caminho_usr})')
 
     return efetivo, notas
+
+
+def main() -> int:
+    for fluxo in (sys.stdout, sys.stderr):
+        try:
+            fluxo.reconfigure(encoding='utf-8')
+        except (AttributeError, OSError):
+            pass
+    args = sys.argv[1:]
+    if not args:
+        print(__doc__)
+        return 2
+    raiz = Path(args[0]).resolve()
+    efetivo, notas = resolver(raiz)
+
+    caminho_proj = caminho_projeto(raiz)
+    if not caminho_proj.exists():
+        caminho_proj = caminho_projeto_legado(raiz)
+    caminho_usr = caminho_usuario()
+
+    print(f'raiz do projeto  : {raiz}')
+    print(f'projeto (nível 1): {caminho_proj} ({"existe" if caminho_proj.exists() else "não existe"})')
+    print(f'usuário (nível 2): {caminho_usr} ({"existe" if caminho_usr.exists() else "não existe"})')
+    print()
+    if not efetivo:
+        print('(nada configurado em nenhum nível — só o placeholder da skill)')
+        return 0
+    for secao, dados in efetivo.items():
+        print(f'{secao}:')
+        if isinstance(dados, dict):
+            for chave, valor in dados.items():
+                if isinstance(valor, dict):
+                    print(f'  {chave}:')
+                    for chave2, valor2 in valor.items():
+                        print(f'    {chave2}: {valor2!r}')
+                else:
+                    print(f'  {chave}: {valor!r}')
+        else:
+            print(f'  {dados!r}')
+    if notas:
+        print('\ncampos que vieram do nível de usuário:')
+        for nota in notas:
+            print(f'  {nota}')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

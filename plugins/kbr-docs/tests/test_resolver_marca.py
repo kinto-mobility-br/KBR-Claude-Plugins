@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Testes da cascata de config (resolver_marca.py): projeto -> usuario -> vazio."""
+import io
 import os
 import sys
 import tempfile
@@ -144,6 +145,41 @@ class TesteCaminhoDeArquivoAbsolutizado(BaseComRaizEUsuario):
         self._gravar_projeto('autoria:\n  avatar: ""\n')
         efetivo, _ = resolver_marca.resolver(self.raiz)
         self.assertEqual(efetivo["autoria"]["avatar"], "")
+
+
+class TesteMainResolverMarca(BaseComRaizEUsuario):
+    def _rodar(self, *args):
+        argv_antigo = sys.argv
+        sys.argv = ["resolver_marca.py", *args]
+        saida_antiga, erro_antigo = sys.stdout, sys.stderr
+        sys.stdout, sys.stderr = io.StringIO(), io.StringIO()
+        try:
+            codigo = resolver_marca.main()
+        finally:
+            saida = sys.stdout.getvalue()
+            erro = sys.stderr.getvalue()
+            sys.stdout, sys.stderr = saida_antiga, erro_antigo
+            sys.argv = argv_antigo
+        return codigo, saida, erro
+
+    def test_mostra_o_efetivo_sem_gravar_nada(self):
+        self._gravar_projeto('autoria:\n  autor: "Do Projeto"\n')
+        codigo, saida, _ = self._rodar(str(self.raiz))
+        self.assertEqual(codigo, 0)
+        self.assertIn("Do Projeto", saida)
+        self.assertFalse(resolver_marca.caminho_usuario().exists())
+
+    def test_sem_argumento_mostra_ajuda_e_sai_com_codigo_2(self):
+        codigo, _, _ = self._rodar()
+        self.assertEqual(codigo, 2)
+
+    def test_cita_nivel_de_usuario_quando_o_campo_vem_de_la(self):
+        self._gravar_projeto('autoria:\n  autor: ""\n')
+        self._gravar_usuario('autoria:\n  avatar: "foto.svg"\n')
+        (Path(self.tmp_usuario.name) / ".claude" / "plugins-data" / "kbr-docs" / "foto.svg").write_text("<svg></svg>", encoding="utf-8")
+        codigo, saida, _ = self._rodar(str(self.raiz))
+        self.assertEqual(codigo, 0)
+        self.assertIn("nível de usuário", saida)
 
 
 if __name__ == "__main__":

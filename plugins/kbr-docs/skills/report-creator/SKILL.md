@@ -52,7 +52,7 @@ python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/aplicar_marca.py" do
 ```
 
 O script:
-1. lê o `.docs-brand.yml` da raiz (se não existir, volte à seção 1);
+1. resolve a cascata de três níveis via `resolver_marca.resolver()` (se `nenhum_nivel_configurado()` for verdadeiro, volte à seção 1);
 2. copia `assets/` (design system + runtime) para o destino;
 3. instala os logos do projeto por cima dos placeholders, mantendo a extensão original, e a
    foto do autor (`autoria.avatar`) no selo do rodapé — sem foto, ficam as iniciais;
@@ -106,9 +106,9 @@ repositório. Caminho de arquivo (logo, avatar) sempre resolve relativo à
 pasta de ONDE aquele campo veio, nunca contra a raiz do projeto quando vier
 do usuário.
 
-`python resolver_marca.py <raiz>` mostra o efetivo (já mesclado) sem gravar
-nada — use isso, não `descobrir.py`, pra ver o que já está coberto antes de
-perguntar à pessoa o que falta.
+`python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/resolver_marca.py" <raiz>`
+mostra o efetivo (já mesclado) sem gravar nada — use isso, não `descobrir.py`, pra ver
+o que já está coberto antes de perguntar à pessoa o que falta.
 
 ## O que o `.docs-brand.yml` guarda
 
