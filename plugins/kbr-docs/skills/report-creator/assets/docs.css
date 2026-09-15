@@ -199,7 +199,7 @@ body{overflow:hidden}
    nada dentro da coluna central podia atravessar a página — o rodapé ficava
    preso à largura do texto, ou cortado ao tentar sair. Sidebar e TOC ficam
    `sticky`, então continuam à vista enquanto o conteúdo passa. */
-.shell{--side-w:224px;--toc-w:208px;display:grid;grid-template-columns:var(--side-w) minmax(0,1fr) var(--toc-w);align-items:start;height:calc(100vh - var(--hdr-h));overflow-y:auto;overflow-x:hidden}
+.shell{--side-w:224px;--toc-w:208px;display:grid;grid-template-columns:var(--side-w) minmax(0,1fr) var(--toc-w);align-items:stretch;height:calc(100vh - var(--hdr-h));overflow-y:auto;overflow-x:hidden}
 .side{
   background:var(--surface);border-right:1px solid var(--border);
   padding:var(--gap-lg);
