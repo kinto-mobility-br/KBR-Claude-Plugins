@@ -177,17 +177,29 @@ class TesteMain(unittest.TestCase):
         self.assertEqual(codigo, 0)
         self.assertIn("raiz do projeto", saida)
         self.assertFalse((self.raiz / ".docs-brand.yml").exists())
+        self.assertFalse(
+            (self.raiz / ".claude" / "plugins-data" / "kbr-docs" / "docs-brand.yml").exists())
 
-    def test_escrever_grava_o_arquivo(self):
+    def test_escrever_grava_o_arquivo_no_local_canonico(self):
         codigo, saida, _ = _rodar(str(self.raiz), "--escrever")
         self.assertEqual(codigo, 0)
-        destino = self.raiz / ".docs-brand.yml"
+        destino = self.raiz / ".claude" / "plugins-data" / "kbr-docs" / "docs-brand.yml"
         self.assertTrue(destino.exists())
         self.assertIn("escrito:", saida)
 
-    def test_nunca_sobrescreve_arquivo_existente(self):
-        destino = self.raiz / ".docs-brand.yml"
+    def test_nunca_sobrescreve_o_canonico_ja_existente(self):
+        destino = self.raiz / ".claude" / "plugins-data" / "kbr-docs" / "docs-brand.yml"
+        destino.parent.mkdir(parents=True)
         destino.write_text("conteudo original\n", encoding="utf-8")
         codigo, saida, _ = _rodar(str(self.raiz), "--escrever")
         self.assertEqual(codigo, 1)
         self.assertEqual(destino.read_text(encoding="utf-8"), "conteudo original\n")
+
+    def test_nao_cria_canonico_quando_ja_ha_legado(self):
+        legado = self.raiz / ".docs-brand.yml"
+        legado.write_text("conteudo legado\n", encoding="utf-8")
+        codigo, saida, _ = _rodar(str(self.raiz), "--escrever")
+        self.assertEqual(codigo, 1)
+        canonico = self.raiz / ".claude" / "plugins-data" / "kbr-docs" / "docs-brand.yml"
+        self.assertFalse(canonico.exists())
+        self.assertEqual(legado.read_text(encoding="utf-8"), "conteudo legado\n")

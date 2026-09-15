@@ -24,6 +24,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import resolver_marca
+
 # Pastas que nunca são do projeto — logo de dependência não é a marca de ninguém.
 IGNORAR = {
     '.git', 'node_modules', '.ds-sync', '.design-sync', 'dist', 'build', 'out',
@@ -356,7 +358,8 @@ def main() -> int:
     print(f"logo (escuro)   : {escuro['caminho'] if escuro else '(nenhum — usará o placeholder)'}")
 
     yml = montar_yaml(raiz, nome, origem, claro, escuro)
-    destino = raiz / '.docs-brand.yml'
+    destino = resolver_marca.caminho_projeto(raiz)
+    legado = resolver_marca.caminho_projeto_legado(raiz)
 
     if not escrever:
         print(f'\n--- {destino} (prévia; use --escrever para gravar) ---\n')
@@ -366,6 +369,11 @@ def main() -> int:
     if destino.exists():
         print(f'\n{destino} já existe — não vou sobrescrever. Apague ou edite à mão.')
         return 1
+    if legado.exists():
+        print(f'\n{legado} já existe (formato legado) — não vou criar {destino} por cima.\n'
+              f'Apague o legado primeiro se quiser migrar pro local novo, ou edite-o à mão.')
+        return 1
+    destino.parent.mkdir(parents=True, exist_ok=True)
     destino.write_text(yml, encoding='utf-8', newline='\n')
     print(f'\nescrito: {destino}')
     return 0
