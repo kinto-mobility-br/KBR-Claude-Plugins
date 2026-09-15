@@ -2,7 +2,8 @@
 """
 Monta um conjunto de documentos com a identidade do projeto.
 
-Lê o `.docs-brand.yml` da raiz, copia os arquivos da skill para a pasta de destino,
+Resolve a cascata de marca em três níveis (projeto canônico → projeto legado →
+nível de usuário), copia os arquivos da skill para a pasta de destino,
 COPIA OS LOGOS DO PROJETO por cima dos placeholders e escreve `assets/brand.css` com
 os tokens de marca. Os HTML saem com `{{PROJETO}}` e companhia já substituídos.
 

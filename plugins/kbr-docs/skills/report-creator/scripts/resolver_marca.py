@@ -77,8 +77,7 @@ def carregar_yaml(caminho: Path) -> dict:
 import os
 
 NOME_ARQUIVO = 'docs-brand.yml'
-CAMPOS_ARQUIVO_REAIS = (('logo', 'claro'), ('logo', 'escuro'), ('autoria', 'avatar'))
-CAMPOS_PARA_REPORTAR = CAMPOS_ARQUIVO_REAIS + (('autoria', 'autor'),)
+CAMPOS_DE_ARQUIVO = (('logo', 'claro'), ('logo', 'escuro'), ('autoria', 'avatar'))
 
 
 # ------------------------------------------------------------------ caminhos --
@@ -124,7 +123,7 @@ def _absolutizar_campos_de_arquivo(cfg: dict, base: Path) -> None:
       `descobrir.py`).
     - Para USUÁRIO: `base` é a pasta de config (~/.claude/plugins-data/kbr-docs/), caminhos
       relativos aos arquivos do usuário, seguindo a convenção de pasta estruturada."""
-    for secao, campo in CAMPOS_ARQUIVO_REAIS:
+    for secao, campo in CAMPOS_DE_ARQUIVO:
         bloco = cfg.get(secao)
         if not isinstance(bloco, dict):
             continue
@@ -179,7 +178,7 @@ def resolver(raiz: Path) -> tuple[dict, list[str]]:
 
     efetivo = _mesclar(cfg_projeto, cfg_usuario)
 
-    for secao, campo in CAMPOS_PARA_REPORTAR:
+    for secao, campo in CAMPOS_DE_ARQUIVO:
         veio_do_projeto = bool(((cfg_projeto.get(secao) or {}).get(campo) or '').strip())
         veio_do_usuario = bool(((cfg_usuario.get(secao) or {}).get(campo) or '').strip())
         if not veio_do_projeto and veio_do_usuario:

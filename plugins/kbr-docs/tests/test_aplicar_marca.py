@@ -229,7 +229,7 @@ class TesteCascataViaMain(unittest.TestCase):
             'tipografia:\n  fontes_externas: true\n',
             encoding="utf-8")
 
-        # usuario define o autor
+        # usuario define o autor (campo de texto, não arquivo — não gera nota de "nível de usuário")
         caminho_usuario = Path(self.tmp_usuario.name) / ".claude" / "plugins-data" / "kbr-docs" / "docs-brand.yml"
         caminho_usuario.parent.mkdir(parents=True)
         caminho_usuario.write_text('autoria:\n  autor: "Autor Pessoal"\n', encoding="utf-8")
@@ -239,4 +239,33 @@ class TesteCascataViaMain(unittest.TestCase):
         self.assertEqual(codigo, 0)
         html = (destino / "index.html").read_text(encoding="utf-8")
         self.assertIn("Autor Pessoal", html)
-        self.assertIn("nível de usuário", saida)  # citado no relatório
+
+    def test_avatar_do_nivel_de_usuario_gera_nota_de_nivel(self):
+        # projeto define o config, mas deixa avatar em branco
+        caminho_projeto = self.raiz / ".claude" / "plugins-data" / "kbr-docs" / "docs-brand.yml"
+        caminho_projeto.parent.mkdir(parents=True)
+        caminho_projeto.write_text(
+            'projeto:\n  nome: "Projeto X"\n'
+            'logo:\n  claro: ""\n  escuro: ""\n'
+            'marca:\n  claro:\n    brand: "#336699"\n'
+            '  escuro:\n    brand: "#5C9BC9"\n'
+            'textos:\n  rodape: "rodape"\n'
+            'autoria:\n  autor: ""\n  avatar: ""\n'
+            'contato:\n  email: ""\n'
+            'tipografia:\n  fontes_externas: true\n',
+            encoding="utf-8")
+
+        # usuario define o avatar (campo de arquivo — deve gerar nota "nível de usuário")
+        pasta_usuario = Path(self.tmp_usuario.name) / ".claude" / "plugins-data" / "kbr-docs"
+        pasta_usuario.mkdir(parents=True, exist_ok=True)
+        # criar arquivo de avatar minúsculo (SVG)
+        avatar_svg = pasta_usuario / "avatar.svg"
+        avatar_svg.write_text("<svg></svg>", encoding="utf-8")
+        caminho_usuario = pasta_usuario / "docs-brand.yml"
+        caminho_usuario.write_text('autoria:\n  avatar: "avatar.svg"\n', encoding="utf-8")
+
+        destino = self.raiz / "saida"
+        codigo, saida, _ = _rodar(str(destino), f"--raiz={self.raiz}")
+        self.assertEqual(codigo, 0)
+        # avatar é um campo de arquivo, então gera nota de "nível de usuário"
+        self.assertIn("nível de usuário", saida)
