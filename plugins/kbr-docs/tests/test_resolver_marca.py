@@ -2,6 +2,7 @@
 """Testes da cascata de config (resolver_marca.py): projeto -> usuario -> vazio."""
 import io
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -180,6 +181,16 @@ class TesteMainResolverMarca(BaseComRaizEUsuario):
         codigo, saida, _ = self._rodar(str(self.raiz))
         self.assertEqual(codigo, 0)
         self.assertIn("nível de usuário", saida)
+
+    def test_acha_a_raiz_do_git_quando_rodado_de_uma_subpasta(self):
+        subprocess.run(["git", "init", "--quiet", str(self.raiz)], check=True)
+        self._gravar_projeto('projeto:\n  nome: "Do Fundo Do Poco"\n')
+        subpasta = self.raiz / "src" / "profundo"
+        subpasta.mkdir(parents=True)
+        codigo, saida, _ = self._rodar(str(subpasta))
+        self.assertEqual(codigo, 0)
+        self.assertIn("Do Fundo Do Poco", saida)
+        self.assertIn(str(self.raiz.resolve()), saida)
 
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ from pathlib import Path
 
 # ------------------------------------------------------------------------ raiz --
 def raiz_do_projeto(inicio: Path) -> Path:
+    """A raiz do repositório, ou o diretório dado se não houver git."""
     try:
         r = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                            cwd=inicio, capture_output=True, text=True, timeout=10)
@@ -220,7 +221,7 @@ def main() -> int:
             fluxo.reconfigure(encoding='utf-8')
         except (AttributeError, OSError):
             pass
-    args = sys.argv[1:]
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
     if not args:
         print(__doc__)
         return 2
