@@ -81,6 +81,19 @@ def achar_navegador() -> Path:
         f'em lugar não padrão.')
 
 
+def _flags_extras() -> list[str]:
+    """
+    `--no-sandbox` só quando necessário: o sandbox do Chromium exige
+    namespaces de usuário sem privilégio, que muitos ambientes de CI
+    (rodando como root, ou com AppArmor restringindo namespaces) não
+    oferecem — nesse caso o navegador aborta com "No usable sandbox!" antes
+    de renderizar. Numa máquina de desenvolvedor normal, sem privilégio de
+    root, o sandbox funciona e continua ativo — não desativamos à toa.
+    """
+    e_root = hasattr(os, 'geteuid') and os.geteuid() == 0
+    return ['--no-sandbox'] if e_root else []
+
+
 def converter(entrada: Path, saida: Path, navegador: Path) -> None:
     """
     Roda `navegador` em modo headless pra gerar `saida` a partir de `entrada`.
@@ -107,6 +120,7 @@ def converter(entrada: Path, saida: Path, navegador: Path) -> None:
         str(navegador),
         '--headless',
         '--disable-gpu',
+        *_flags_extras(),
         f'--print-to-pdf={saida}',
         '--no-pdf-header-footer',
         entrada.as_uri(),

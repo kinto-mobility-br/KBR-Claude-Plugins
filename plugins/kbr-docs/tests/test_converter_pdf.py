@@ -58,6 +58,21 @@ class TesteAcharNavegador(unittest.TestCase):
         self.assertTrue(achado.exists())
 
 
+class TesteFlagsExtras(unittest.TestCase):
+    def test_adiciona_no_sandbox_quando_roda_como_root(self):
+        with mock.patch("converter_pdf.os.geteuid", return_value=0, create=True):
+            self.assertEqual(converter_pdf._flags_extras(), ["--no-sandbox"])
+
+    def test_nao_adiciona_no_sandbox_fora_de_root(self):
+        with mock.patch("converter_pdf.os.geteuid", return_value=1000, create=True):
+            self.assertEqual(converter_pdf._flags_extras(), [])
+
+    @unittest.skipUnless(os.name == "nt", "verifica o comportamento real do Windows, sem geteuid")
+    def test_nao_adiciona_no_sandbox_no_windows_de_verdade(self):
+        self.assertFalse(hasattr(os, "geteuid"))
+        self.assertEqual(converter_pdf._flags_extras(), [])
+
+
 class TesteConverter(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -154,6 +169,19 @@ class TesteConverterErrosDoProcesso(unittest.TestCase):
         self.assertNotIn(" ", url)
         self.assertIn("--headless", comando)
         self.assertIn("--no-pdf-header-footer", comando)
+
+    def test_comando_inclui_no_sandbox_quando_roda_como_root(self):
+        saida = self.raiz / "saida.pdf"
+
+        def _run_falso(comando, **kwargs):
+            saida.write_bytes(b"%PDF-1.4 fake")
+            return subprocess.CompletedProcess(args=comando, returncode=0, stdout="", stderr="")
+
+        with mock.patch("converter_pdf.os.geteuid", return_value=0, create=True), \
+                mock.patch("converter_pdf.subprocess.run", side_effect=_run_falso) as mock_run:
+            converter_pdf.converter(self.entrada, saida, self.navegador_falso)
+        comando = mock_run.call_args.args[0]
+        self.assertIn("--no-sandbox", comando)
 
 
 def _rodar(*args):
