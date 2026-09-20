@@ -115,6 +115,46 @@ class TesteConverterErrosDoProcesso(unittest.TestCase):
                 converter_pdf.converter(self.entrada, saida, self.navegador_falso)
         self.assertIn("não foi criado", str(ctx.exception))
 
+    def test_saida_igual_a_entrada_levanta_erro(self):
+        with self.assertRaises(converter_pdf.ErroConversao) as ctx:
+            converter_pdf.converter(self.entrada, self.entrada, self.navegador_falso)
+        self.assertIn("mesmo arquivo", str(ctx.exception))
+
+    def test_entrada_inexistente_levanta_erro_direto_no_converter(self):
+        entrada_falsa = self.raiz / "nao-existe.html"
+        saida = self.raiz / "teste.pdf"
+        with self.assertRaises(converter_pdf.ErroConversao) as ctx:
+            converter_pdf.converter(entrada_falsa, saida, self.navegador_falso)
+        self.assertIn("não existe", str(ctx.exception))
+
+    def test_pdf_antigo_no_mesmo_caminho_nao_engana_a_checagem(self):
+        saida = self.raiz / "teste.pdf"
+        saida.write_bytes(b"PDF ANTIGO, NAO DEVE SOBREVIVER")
+        resultado_falso = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        with mock.patch("converter_pdf.subprocess.run", return_value=resultado_falso):
+            with self.assertRaises(converter_pdf.ErroConversao) as ctx:
+                converter_pdf.converter(self.entrada, saida, self.navegador_falso)
+        self.assertIn("não foi criado", str(ctx.exception))
+
+    def test_comando_escapa_caracteres_especiais_na_url(self):
+        entrada_especial = self.raiz / "chamado #4845.html"
+        entrada_especial.write_text(HTML_MINIMO, encoding="utf-8")
+        saida = self.raiz / "saida.pdf"
+
+        def _run_falso(comando, **kwargs):
+            saida.write_bytes(b"%PDF-1.4 fake")
+            return subprocess.CompletedProcess(args=comando, returncode=0, stdout="", stderr="")
+
+        with mock.patch("converter_pdf.subprocess.run", side_effect=_run_falso) as mock_run:
+            converter_pdf.converter(entrada_especial, saida, self.navegador_falso)
+        comando = mock_run.call_args.args[0]
+        url = comando[-1]
+        self.assertTrue(url.startswith("file:///"))
+        self.assertIn("%23", url)
+        self.assertNotIn(" ", url)
+        self.assertIn("--headless", comando)
+        self.assertIn("--no-pdf-header-footer", comando)
+
 
 def _rodar(*args):
     argv_antigo = sys.argv

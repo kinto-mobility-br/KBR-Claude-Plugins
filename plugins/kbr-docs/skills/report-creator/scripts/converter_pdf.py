@@ -10,6 +10,13 @@ Uso:
 Sem `saida.pdf`, usa o mesmo nome de `entrada.html` com a extensão trocada
 pra `.pdf`, na mesma pasta. O `@media print` do CSS da própria página entra
 em ação sozinho — é o mesmo comportamento de apertar Ctrl+P no navegador.
+
+Navegador: acha Edge/Chrome nos caminhos padrão do Windows ou no PATH. Numa
+máquina sem nenhum dos dois nos lugares de sempre, aponte pro executável com
+a variável de ambiente KBR_DOCS_BROWSER.
+
+Códigos de saída: 0 = PDF gerado; 1 = erro (entrada, navegador ou conversão —
+mensagem em stderr explica qual); 2 = uso incorreto (sem argumento).
 """
 from __future__ import annotations
 
@@ -77,19 +84,36 @@ def achar_navegador() -> Path:
 def converter(entrada: Path, saida: Path, navegador: Path) -> None:
     """
     Roda `navegador` em modo headless pra gerar `saida` a partir de `entrada`.
-    Levanta ErroConversao (mensagem em PT-BR) se o processo falhar ou não
-    produzir o arquivo esperado.
+    Levanta ErroConversao (mensagem em PT-BR) se a entrada não existir, se
+    `saida` for o mesmo arquivo que `entrada`, se o processo falhar, ou se
+    não produzir o arquivo esperado.
     """
+    entrada = entrada.resolve()
+    saida = saida.resolve()
+
+    if not entrada.exists():
+        raise ErroConversao(f'Entrada não existe: {entrada}.')
+
+    if saida == entrada:
+        raise ErroConversao(f'A saída não pode ser o mesmo arquivo da entrada: {saida}.')
+
+    if saida.exists():
+        try:
+            saida.unlink()
+        except OSError as erro:
+            raise ErroConversao(f'Não consegui apagar o PDF antigo em {saida}: {erro}') from erro
+
     comando = [
         str(navegador),
         '--headless',
         '--disable-gpu',
         f'--print-to-pdf={saida}',
         '--no-pdf-header-footer',
-        f'file:///{entrada.resolve().as_posix()}',
+        entrada.as_uri(),
     ]
     try:
-        resultado = subprocess.run(comando, capture_output=True, text=True, timeout=60)
+        resultado = subprocess.run(
+            comando, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
     except (OSError, subprocess.SubprocessError) as erro:
         raise ErroConversao(f'Não consegui rodar {navegador}: {erro}') from erro
 

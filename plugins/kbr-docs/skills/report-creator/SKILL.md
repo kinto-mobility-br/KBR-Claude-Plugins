@@ -69,13 +69,20 @@ a lista de seções e o Front Matter pode entrar como primeira seção.
 ### Exportar para PDF
 
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/converter_pdf.py" docs/<assunto>/index.html
+python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/converter_pdf.py" docs/<assunto>/index.html [saida.pdf]
 ```
 
 Útil pra quem vai anexar o documento em algum lugar que não abre HTML inline (ex.: ServiceDesk —
 o portal baixa `.html` como arquivo bruto em vez de pré-visualizar). Chama um navegador Chromium
 já instalado na máquina — sem depender de nenhuma ferramenta nova. Sem o segundo argumento, o PDF
-nasce ao lado do HTML, com o mesmo nome.
+nasce ao lado do HTML, com o mesmo nome. Sem Edge/Chrome nos caminhos padrão do Windows, defina
+`KBR_DOCS_BROWSER` com o caminho do executável. Códigos de saída: `0` sucesso, `1` erro (mensagem
+em stderr), `2` uso incorreto.
+
+É um script independente — quem não é um plugin instalado (ex.: outra skill do workspace) pode
+chamá-lo direto pelo caminho absoluto, achando a versão mais recente instalada em
+`~/.claude/plugins/cache/kinto-brasil/kbr-docs/*/skills/report-creator/scripts/converter_pdf.py`,
+sem precisar de `${CLAUDE_PLUGIN_ROOT}`.
 
 ## O que existe nesta skill
 
