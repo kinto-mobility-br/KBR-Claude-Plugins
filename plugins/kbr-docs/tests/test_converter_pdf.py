@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Testes de converter_pdf.py: conversao de HTML local em PDF via navegador."""
+"""Testes de converter_pdf.py: conversão de HTML local em PDF via navegador."""
 import io
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 RAIZ_PLUGIN = Path(__file__).resolve().parents[1]
 SCRIPTS = RAIZ_PLUGIN / "skills" / "report-creator" / "scripts"
@@ -23,7 +25,7 @@ def _navegador_disponivel() -> bool:
 
 HTML_MINIMO = (
     '<!doctype html><html><head><meta charset="utf-8"><title>Teste</title></head>'
-    '<body><h1>Teste</h1><p>Pagina minima para o converter_pdf.py.</p></body></html>'
+    '<body><h1>Teste</h1><p>Página mínima para o converter_pdf.py.</p></body></html>'
 )
 
 
@@ -81,6 +83,37 @@ class TesteConverter(unittest.TestCase):
         saida = self.raiz / "teste.pdf"
         with self.assertRaises(converter_pdf.ErroConversao):
             converter_pdf.converter(self.entrada, saida, navegador_falso)
+
+
+class TesteConverterErrosDoProcesso(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.raiz = Path(self.tmp.name)
+        self.entrada = self.raiz / "teste.html"
+        self.entrada.write_text(HTML_MINIMO, encoding="utf-8")
+        self.navegador_falso = self.raiz / "navegador-falso.exe"
+        self.navegador_falso.write_text("", encoding="utf-8")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_returncode_diferente_de_zero_levanta_erro(self):
+        saida = self.raiz / "teste.pdf"
+        resultado_falso = subprocess.CompletedProcess(
+            args=[], returncode=1, stdout="", stderr="deu erro na renderizacao")
+        with mock.patch("converter_pdf.subprocess.run", return_value=resultado_falso):
+            with self.assertRaises(converter_pdf.ErroConversao) as ctx:
+                converter_pdf.converter(self.entrada, saida, self.navegador_falso)
+        self.assertIn("código 1", str(ctx.exception))
+
+    def test_sucesso_sem_arquivo_gerado_levanta_erro(self):
+        saida = self.raiz / "teste.pdf"  # nunca criado, propositalmente
+        resultado_falso = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="", stderr="")
+        with mock.patch("converter_pdf.subprocess.run", return_value=resultado_falso):
+            with self.assertRaises(converter_pdf.ErroConversao) as ctx:
+                converter_pdf.converter(self.entrada, saida, self.navegador_falso)
+        self.assertIn("não foi criado", str(ctx.exception))
 
 
 def _rodar(*args):
