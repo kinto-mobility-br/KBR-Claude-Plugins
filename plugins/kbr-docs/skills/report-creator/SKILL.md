@@ -66,6 +66,17 @@ Leia o relatório no fim: ele diz de onde veio cada logo, ou avisa quando caiu n
 Para um documento **único**, gere assim mesmo e use só `documento-modelo.html`: a sidebar vira
 a lista de seções e o Front Matter pode entrar como primeira seção.
 
+### Exportar para PDF
+
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/skills/report-creator/scripts/converter_pdf.py" docs/<assunto>/index.html
+```
+
+Útil pra quem vai anexar o documento em algum lugar que não abre HTML inline (ex.: ServiceDesk —
+o portal baixa `.html` como arquivo bruto em vez de pré-visualizar). Chama um navegador Chromium
+já instalado na máquina — sem depender de nenhuma ferramenta nova. Sem o segundo argumento, o PDF
+nasce ao lado do HTML, com o mesmo nome.
+
 ## O que existe nesta skill
 
 ```
@@ -73,6 +84,7 @@ scripts/
   resolver_marca.py      cascata de três níveis (projeto→usuário→placeholder); `python resolver_marca.py <raiz>` mostra o efetivo sem gravar
   descobrir.py           descobre marca/logo/nome e escreve .docs-brand.yml
   aplicar_marca.py        gera o conjunto de documentos a partir do .docs-brand.yml
+  converter_pdf.py        converte um HTML local em PDF via navegador já instalado na máquina
 assets/
   docs.css              design system completo (tokens, componentes, layout, claro/escuro)
   docs.js               runtime: tema, codetabs, copiar código, TOC ativo, toast
