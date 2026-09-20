@@ -81,17 +81,12 @@ def achar_navegador() -> Path:
         f'em lugar não padrão.')
 
 
-def _flags_extras() -> list[str]:
-    """
-    `--no-sandbox` só quando necessário: o sandbox do Chromium exige
-    namespaces de usuário sem privilégio, que muitos ambientes de CI
-    (rodando como root, ou com AppArmor restringindo namespaces) não
-    oferecem — nesse caso o navegador aborta com "No usable sandbox!" antes
-    de renderizar. Numa máquina de desenvolvedor normal, sem privilégio de
-    root, o sandbox funciona e continua ativo — não desativamos à toa.
-    """
-    e_root = hasattr(os, 'geteuid') and os.geteuid() == 0
-    return ['--no-sandbox'] if e_root else []
+def _montar_comando(navegador: Path, saida: Path, entrada: Path, sem_sandbox: bool) -> list[str]:
+    comando = [str(navegador), '--headless', '--disable-gpu']
+    if sem_sandbox:
+        comando.append('--no-sandbox')
+    comando += [f'--print-to-pdf={saida}', '--no-pdf-header-footer', entrada.as_uri()]
+    return comando
 
 
 def converter(entrada: Path, saida: Path, navegador: Path) -> None:
@@ -116,20 +111,22 @@ def converter(entrada: Path, saida: Path, navegador: Path) -> None:
         except OSError as erro:
             raise ErroConversao(f'Não consegui apagar o PDF antigo em {saida}: {erro}') from erro
 
-    comando = [
-        str(navegador),
-        '--headless',
-        '--disable-gpu',
-        *_flags_extras(),
-        f'--print-to-pdf={saida}',
-        '--no-pdf-header-footer',
-        entrada.as_uri(),
-    ]
-    try:
-        resultado = subprocess.run(
-            comando, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
-    except (OSError, subprocess.SubprocessError) as erro:
-        raise ErroConversao(f'Não consegui rodar {navegador}: {erro}') from erro
+    def _rodar(sem_sandbox: bool) -> subprocess.CompletedProcess:
+        comando = _montar_comando(navegador, saida, entrada, sem_sandbox)
+        try:
+            return subprocess.run(
+                comando, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
+        except (OSError, subprocess.SubprocessError) as erro:
+            raise ErroConversao(f'Não consegui rodar {navegador}: {erro}') from erro
+
+    resultado = _rodar(sem_sandbox=False)
+    if resultado.returncode != 0 and 'sandbox' in (resultado.stderr or '').lower():
+        # Ambiente sem suporte ao sandbox do Chromium (ex.: container de CI com
+        # AppArmor restringindo namespaces de usuário — acontece mesmo sem ser
+        # root). Tenta de novo sem o sandbox em vez de falhar; numa máquina
+        # onde o sandbox funciona, esse retry nunca acontece — ele continua
+        # ativo por padrão.
+        resultado = _rodar(sem_sandbox=True)
 
     if resultado.returncode != 0:
         raise ErroConversao(

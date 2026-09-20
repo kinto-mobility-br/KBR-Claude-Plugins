@@ -58,21 +58,6 @@ class TesteAcharNavegador(unittest.TestCase):
         self.assertTrue(achado.exists())
 
 
-class TesteFlagsExtras(unittest.TestCase):
-    def test_adiciona_no_sandbox_quando_roda_como_root(self):
-        with mock.patch("converter_pdf.os.geteuid", return_value=0, create=True):
-            self.assertEqual(converter_pdf._flags_extras(), ["--no-sandbox"])
-
-    def test_nao_adiciona_no_sandbox_fora_de_root(self):
-        with mock.patch("converter_pdf.os.geteuid", return_value=1000, create=True):
-            self.assertEqual(converter_pdf._flags_extras(), [])
-
-    @unittest.skipUnless(os.name == "nt", "verifica o comportamento real do Windows, sem geteuid")
-    def test_nao_adiciona_no_sandbox_no_windows_de_verdade(self):
-        self.assertFalse(hasattr(os, "geteuid"))
-        self.assertEqual(converter_pdf._flags_extras(), [])
-
-
 class TesteConverter(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -170,18 +155,39 @@ class TesteConverterErrosDoProcesso(unittest.TestCase):
         self.assertIn("--headless", comando)
         self.assertIn("--no-pdf-header-footer", comando)
 
-    def test_comando_inclui_no_sandbox_quando_roda_como_root(self):
+    def test_retenta_sem_sandbox_quando_falha_por_sandbox(self):
         saida = self.raiz / "saida.pdf"
+        chamadas = []
 
         def _run_falso(comando, **kwargs):
+            chamadas.append(comando)
+            if "--no-sandbox" not in comando:
+                return subprocess.CompletedProcess(
+                    args=comando, returncode=1, stdout="",
+                    stderr="[FATAL] No usable sandbox! Ver documentacao do Chromium.")
             saida.write_bytes(b"%PDF-1.4 fake")
             return subprocess.CompletedProcess(args=comando, returncode=0, stdout="", stderr="")
 
-        with mock.patch("converter_pdf.os.geteuid", return_value=0, create=True), \
-                mock.patch("converter_pdf.subprocess.run", side_effect=_run_falso) as mock_run:
+        with mock.patch("converter_pdf.subprocess.run", side_effect=_run_falso):
             converter_pdf.converter(self.entrada, saida, self.navegador_falso)
-        comando = mock_run.call_args.args[0]
-        self.assertIn("--no-sandbox", comando)
+        self.assertEqual(len(chamadas), 2)
+        self.assertNotIn("--no-sandbox", chamadas[0])
+        self.assertIn("--no-sandbox", chamadas[1])
+        self.assertTrue(saida.exists())
+
+    def test_nao_retenta_quando_falha_por_outro_motivo(self):
+        saida = self.raiz / "saida.pdf"
+        chamadas = []
+
+        def _run_falso(comando, **kwargs):
+            chamadas.append(comando)
+            return subprocess.CompletedProcess(
+                args=comando, returncode=1, stdout="", stderr="algum outro erro qualquer")
+
+        with mock.patch("converter_pdf.subprocess.run", side_effect=_run_falso):
+            with self.assertRaises(converter_pdf.ErroConversao):
+                converter_pdf.converter(self.entrada, saida, self.navegador_falso)
+        self.assertEqual(len(chamadas), 1)
 
 
 def _rodar(*args):
