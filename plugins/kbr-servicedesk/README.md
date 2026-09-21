@@ -4,7 +4,8 @@ Gestor de chamados do ServiceDesk Plus Cloud da KINTO, dentro do Claude Code.
 
 ## Skills
 
-- **`/kbr-servicedesk:sdp`** — o painel: lista seus chamados, mostra detalhe, adiciona nota,
+- **`/kbr-servicedesk:sdp`** — o painel: lista seus chamados, mostra detalhe, responde ao
+  solicitante por e-mail, anota internamente,
   muda status e resolve. Nada é gravado sem você confirmar.
 - **`/kbr-servicedesk:query`** — extrai chamados de **toda a operação** (todos os técnicos)
   filtrados por período para um CSV local, com um menu de extrações prontas e período

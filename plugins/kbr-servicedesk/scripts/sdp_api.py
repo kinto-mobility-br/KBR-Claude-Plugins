@@ -696,6 +696,139 @@ def cmd_nota(args) -> int:
                    "adicionar nota", args.numero)
 
 
+def _enderecos(valor) -> list[str]:
+    """Normaliza um campo de e-mail do chamado numa lista de endereços.
+
+    O SDP é inconsistente nesses campos: `email_cc` ora vem como lista de strings, ora como
+    lista de objetos (`{"email_id": ...}`), ora como string solta. Tratar os três aqui evita
+    que um formato inesperado derrube o envio — ou, pior, que um destinatário desapareça em
+    silêncio e o solicitante fique sem o e-mail.
+    """
+    itens = valor if isinstance(valor, list) else ([valor] if valor else [])
+    saida = []
+    for item in itens:
+        if isinstance(item, dict):
+            item = item.get("email_id") or item.get("email")
+        if isinstance(item, str) and item.strip():
+            saida.append(item.strip())
+    return saida
+
+
+def _sem_repetir(enderecos: list[str], excluir=()) -> list[str]:
+    """A mesma lista, na ordem, sem repetição e sem os endereços de `excluir`.
+
+    A comparação ignora a caixa: o SDP guarda o mesmo endereço às vezes em maiúsculas, e
+    mandar duas vezes para a mesma pessoa é visível na caixa de entrada dela.
+    """
+    fora = {endereco.lower() for endereco in excluir if endereco}
+    vistos: set[str] = set()
+    saida = []
+    for endereco in enderecos:
+        chave = endereco.lower()
+        if chave in vistos or chave in fora:
+            continue
+        vistos.add(chave)
+        saida.append(endereco)
+    return saida
+
+
+def _enderecos_do_argumento(valores) -> list[str]:
+    """Quebra os `--para`/`--cc` em endereços — a flag pode repetir e aceitar lista separada
+    por vírgula, ponto e vírgula ou espaço."""
+    partes: list[str] = []
+    for valor in valores or []:
+        partes.extend(re.split(r"[,;\s]+", valor))
+    return _sem_repetir([parte.strip() for parte in partes if parte.strip()])
+
+
+def destinatarios(pedido: dict, tecnico: str = "") -> tuple[list[str], list[str]]:
+    """Monta o (para, cc) do "responder a todos" a partir do chamado.
+
+    No Para vão o solicitante e quem estiver em `email_to`; no Cc, as cópias do chamado —
+    `email_cc` e `email_ids_to_notify`, que é onde o portal guarda quem foi posto em cópia
+    depois da abertura. O próprio técnico sai das duas listas: responder para si mesmo só
+    enche a própria caixa de entrada.
+    """
+    para = _sem_repetir(_enderecos(campo(pedido, "requester", "email_id"))
+                        + _enderecos(pedido.get("email_to")), excluir=[tecnico])
+    cc = _sem_repetir(_enderecos(pedido.get("email_cc"))
+                      + _enderecos(pedido.get("email_ids_to_notify")),
+                      excluir=[tecnico, *para])
+    return para, cc
+
+
+def _respostas_gravadas(interno: str, token: str) -> set[str] | None:
+    """Ids das respostas (`REQREPLY`) já registradas no chamado; `None` se não deu para ler.
+
+    Serve de antes-e-depois do envio: é assim que o comando confirma que a resposta entrou
+    no chamado de verdade, em vez de confiar apenas no HTTP 200 do POST. O endpoint de
+    resposta não está na documentação pública da API v3 — ele foi descoberto na instância
+    da KINTO —, então a confirmação não é luxo: é o que separa "enviado" de "aceitou e não
+    fez nada".
+    """
+    status, corpo = chamar("GET", f"/requests/{interno}/notifications",
+                           {"list_info": {"row_count": 50}}, token)
+    if status >= 300 or not isinstance(corpo, dict):
+        return None
+    itens = corpo.get("notifications")
+    if not isinstance(itens, list):
+        return None
+    return {str(item.get("id")) for item in itens if isinstance(item, dict)
+            and "reply" in str(item.get("type") or "").lower()}
+
+
+AVISO_SEM_CONFIRMACAO = (
+    "O ServiceDesk aceitou o envio, mas a resposta ainda não apareceu na aba Conversas do "
+    "chamado. NÃO reenvie antes de abrir o chamado e olhar: pode ser só demora do servidor, "
+    "e um reenvio manda o mesmo e-mail duas vezes para o solicitante."
+)
+
+
+def cmd_responder(args) -> int:
+    """Responde ao solicitante por e-mail — o "Reply All" do portal.
+
+    É a diferença que importa em relação à nota: a nota fica no portal e não avisa ninguém
+    (nem com `show_to_requester`, que só a torna visível para quem entrar lá), enquanto a
+    resposta sai como e-mail para o solicitante e para as cópias do chamado.
+    """
+    conteudo = _ler_html(args.arquivo)
+    token = access_token()
+    interno = _id_obrigatorio(args.numero, token)
+    status, corpo = chamar("GET", f"/requests/{interno}", None, token)
+    pedido = _resultado(status, corpo, "request", dict)
+    do_chamado_para, do_chamado_cc = destinatarios(
+        pedido, ler_config().get("tecnico_email", ""))
+    para = _enderecos_do_argumento(args.para) or do_chamado_para
+    if args.so_solicitante:
+        cc: list[str] = []
+    else:
+        cc = _sem_repetir(_enderecos_do_argumento(args.cc) or do_chamado_cc, excluir=para)
+    if not para:
+        raise ErroSDP("Não achei para quem responder neste chamado: ele não tem solicitante "
+                      "com e-mail nem endereço em cópia. Informe o destinatário em --para.")
+    # O assunto vai cru, sem `entidades()`: assunto de e-mail não é HTML, e uma entidade
+    # numérica ali apareceria literal ("informa&#231;&#227;o") na caixa do solicitante.
+    assunto = (args.assunto or pedido.get("subject") or f"Chamado {args.numero}").strip()
+    if not args.confirmar:
+        return _simular("responder ao solicitante", args.numero, para=para, cc=cc,
+                        assunto=assunto, previa=limpo(conteudo, 600))
+
+    antes = _respostas_gravadas(interno, token)
+    payload = {"notification": {"to": para, "cc": cc, "subject": assunto,
+                                "description": entidades(conteudo)}}
+    status, corpo = chamar("POST", f"/requests/{interno}/_reply", payload, token)
+    if status >= 300:
+        raise ErroSDP(traduzir("sdp", corpo, http=status))
+    depois = _respostas_gravadas(interno, token)
+    confirmado = bool(antes is not None and depois is not None and (depois - antes))
+    saida = {"enviado": True, "acao": "responder ao solicitante", "chamado": args.numero,
+             "para": para, "cc": cc, "assunto": assunto, "confirmado": confirmado}
+    if not confirmado:
+        saida["aviso"] = AVISO_SEM_CONFIRMACAO
+    _imprimir(saida)
+    return 0
+
+
 def cmd_status(args) -> int:
     novo = args.status
     espera = novo.strip().lower() in STATUS_DE_ESPERA
@@ -832,6 +965,22 @@ def construir_parser() -> argparse.ArgumentParser:
                       dest="visivel_solicitante")
     nota.add_argument("--confirmar", action="store_true")
 
+    responder = sub.add_parser(
+        "responder", help="responde ao solicitante por e-mail (o Reply All do portal)")
+    responder.add_argument("numero")
+    responder.add_argument("--arquivo", required=True, help="arquivo com o HTML da resposta")
+    responder.add_argument("--para", action="append", default=None,
+                           help="substitui os destinatários vindos do chamado; pode repetir "
+                                "ou separar por vírgula")
+    responder.add_argument("--cc", action="append", default=None,
+                           help="substitui as cópias vindas do chamado; pode repetir ou "
+                                "separar por vírgula")
+    responder.add_argument("--so-solicitante", action="store_true", dest="so_solicitante",
+                           help="responde só ao solicitante, sem as cópias do chamado")
+    responder.add_argument("--assunto", default=None,
+                           help="assunto do e-mail; por padrão, o assunto do chamado")
+    responder.add_argument("--confirmar", action="store_true")
+
     status_cmd = sub.add_parser("status", help="muda o status do chamado")
     status_cmd.add_argument("numero")
     status_cmd.add_argument("status")
@@ -864,7 +1013,8 @@ def construir_parser() -> argparse.ArgumentParser:
 
 
 COMANDOS = {"testar": cmd_testar, "listar": cmd_listar, "detalhe": cmd_detalhe,
-            "nota": cmd_nota, "status": cmd_status, "resolver": cmd_resolver,
+            "nota": cmd_nota, "responder": cmd_responder, "status": cmd_status,
+            "resolver": cmd_resolver,
             "autorizar": cmd_autorizar, "escopos": cmd_escopos, "query": cmd_query}
 
 

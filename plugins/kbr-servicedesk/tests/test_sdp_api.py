@@ -714,6 +714,156 @@ class TesteEscrita(BaseComando):
         self.assertIn("status inválido", self.json_da_saida(saida)["erro"])
 
 
+class TesteResponder(BaseComando):
+    """A resposta ao solicitante — o único registro do chamado que sai por e-mail.
+
+    A nota, mesmo visível ao solicitante, só aparece no portal: quem dispara e-mail é a
+    resposta (`REQREPLY`). Por isso o comando confere, depois de postar, se a resposta
+    realmente entrou no chamado.
+    """
+
+    BUSCA = {"requests": [{"id": "173861000000000001", "display_id": "4942"}]}
+    CHAMADO = {"request": {
+        "id": "173861000000000001",
+        "display_id": "4942",
+        "subject": "Arquivo de KM não atualiza",
+        "requester": {"email_id": "solicitante@kintomobility.com.br"},
+        "email_to": [],
+        "email_cc": ["gestor@kintomobility.com.br"],
+        "email_ids_to_notify": ["area@kintomobility.com.br"],
+        "email_bcc": [],
+    }}
+    SEM_RESPOSTA = {"notifications": [{"id": "n-ack", "type": "RequesterAck_E-Mail"}]}
+    COM_RESPOSTA = {"notifications": [{"id": "n-ack", "type": "RequesterAck_E-Mail"},
+                                      {"id": "n-nova", "type": "REQREPLY"}]}
+    ACEITO = {"response_status": {"status": "success"}}
+
+    def arquivo_html(self, conteudo="<p>Bom dia! A atualização voltou a rodar.</p>"):
+        caminho = Path(self.tmp.name) / "resposta.html"
+        caminho.write_text(conteudo, encoding="utf-8")
+        return str(caminho)
+
+    def chamado(self, **trocas):
+        pedido = dict(self.CHAMADO["request"])
+        pedido.update(trocas)
+        return {"request": pedido}
+
+    def enviar(self, *argumentos, chamado=None, verificacao=None):
+        rede = self.rede(TOKEN_OK, self.BUSCA, chamado or self.CHAMADO, self.SEM_RESPOSTA,
+                         self.ACEITO, verificacao or self.COM_RESPOSTA)
+        codigo, saida = self.executar("responder", "4942", "--arquivo", self.arquivo_html(),
+                                      *argumentos, "--confirmar")
+        return rede, codigo, saida
+
+    def payload(self, rede):
+        envio = [c for c in rede.chamadas if c["metodo"] == "POST"][-1]
+        return envio, json.loads(urllib.parse.parse_qs(envio["corpo"])["input_data"][0])
+
+    def test_sem_confirmar_apenas_simula(self):
+        rede = self.rede(TOKEN_OK, self.BUSCA, self.CHAMADO)
+        codigo, saida = self.executar("responder", "4942", "--arquivo", self.arquivo_html())
+        self.assertEqual(codigo, 0)
+        corpo = self.json_da_saida(saida)
+        self.assertTrue(corpo["simulacao"])
+        self.assertEqual(corpo["para"], ["solicitante@kintomobility.com.br"])
+        self.assertEqual(corpo["cc"], ["gestor@kintomobility.com.br",
+                                       "area@kintomobility.com.br"])
+        self.assertTrue(all(c["metodo"] == "GET" for c in rede.chamadas[1:]))
+
+    def test_com_confirmar_posta_a_resposta(self):
+        rede, codigo, _ = self.enviar()
+        self.assertEqual(codigo, 0)
+        envio, payload = self.payload(rede)
+        self.assertIn("/_reply", envio["url"])
+        self.assertEqual(payload["notification"]["to"],
+                         ["solicitante@kintomobility.com.br"])
+        self.assertEqual(payload["notification"]["cc"],
+                         ["gestor@kintomobility.com.br", "area@kintomobility.com.br"])
+
+    def test_assunto_vem_do_chamado(self):
+        rede, _, _ = self.enviar()
+        _, payload = self.payload(rede)
+        self.assertEqual(payload["notification"]["subject"], "Arquivo de KM não atualiza")
+
+    def test_assunto_pode_ser_trocado(self):
+        rede, _, _ = self.enviar("--assunto", "Re: KM — retorno")
+        _, payload = self.payload(rede)
+        self.assertEqual(payload["notification"]["subject"], "Re: KM — retorno")
+
+    def test_nao_responde_para_o_proprio_tecnico(self):
+        # `fulano@kintomobility.com.br` é o técnico configurado no BaseSDP.
+        rede, _, _ = self.enviar(chamado=self.chamado(
+            email_cc=["fulano@kintomobility.com.br", "gestor@kintomobility.com.br"],
+            email_ids_to_notify=[]))
+        _, payload = self.payload(rede)
+        self.assertEqual(payload["notification"]["cc"], ["gestor@kintomobility.com.br"])
+
+    def test_so_solicitante_deixa_o_cc_de_fora(self):
+        rede, _, _ = self.enviar("--so-solicitante")
+        _, payload = self.payload(rede)
+        self.assertEqual(payload["notification"]["to"],
+                         ["solicitante@kintomobility.com.br"])
+        self.assertEqual(payload["notification"].get("cc", []), [])
+
+    def test_para_e_cc_explicitos_substituem_os_do_chamado(self):
+        rede, _, _ = self.enviar("--para", "outro@kintomobility.com.br",
+                                 "--cc", "terceiro@kintomobility.com.br")
+        _, payload = self.payload(rede)
+        self.assertEqual(payload["notification"]["to"], ["outro@kintomobility.com.br"])
+        self.assertEqual(payload["notification"]["cc"], ["terceiro@kintomobility.com.br"])
+
+    def test_destinatario_em_formato_de_objeto_tambem_vale(self):
+        # O SDP às vezes devolve o endereço dentro de um objeto, não como string solta.
+        rede, _, _ = self.enviar(chamado=self.chamado(
+            email_cc=[{"email_id": "gestor@kintomobility.com.br"}],
+            email_ids_to_notify=[]))
+        _, payload = self.payload(rede)
+        self.assertEqual(payload["notification"]["cc"], ["gestor@kintomobility.com.br"])
+
+    def test_endereco_repetido_entra_uma_vez_so(self):
+        rede, _, _ = self.enviar(chamado=self.chamado(
+            email_cc=["gestor@kintomobility.com.br", "GESTOR@kintomobility.com.br"],
+            email_ids_to_notify=["solicitante@kintomobility.com.br"]))
+        _, payload = self.payload(rede)
+        self.assertEqual(payload["notification"]["cc"], ["gestor@kintomobility.com.br"])
+
+    def test_confirma_quando_a_resposta_aparece_no_chamado(self):
+        _, codigo, saida = self.enviar()
+        self.assertEqual(codigo, 0)
+        self.assertTrue(self.json_da_saida(saida)["confirmado"])
+
+    def test_avisa_quando_nao_consegue_confirmar(self):
+        _, codigo, saida = self.enviar(verificacao=self.SEM_RESPOSTA)
+        corpo = self.json_da_saida(saida)
+        self.assertEqual(codigo, 0)
+        self.assertFalse(corpo["confirmado"])
+        self.assertIn("não reenvie", corpo["aviso"].lower())
+
+    def test_chamado_sem_ninguem_para_responder_recusa(self):
+        self.rede(TOKEN_OK, self.BUSCA, self.chamado(
+            requester={}, email_to=[], email_cc=[], email_ids_to_notify=[]))
+        codigo, saida = self.executar("responder", "4942", "--arquivo",
+                                      self.arquivo_html(), "--confirmar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("--para", self.json_da_saida(saida)["erro"])
+
+    def test_acentos_viram_entidades(self):
+        rede, _, _ = self.enviar()
+        _, payload = self.payload(rede)
+        descricao = payload["notification"]["description"]
+        self.assertIn("&#231;", descricao)
+        self.assertNotIn("ção", descricao)
+
+    def test_arquivo_fora_de_utf8_vira_errosdp(self):
+        self.rede(TOKEN_OK)
+        caminho = Path(self.tmp.name) / "resposta_latin1.html"
+        caminho.write_bytes("<p>Situação resolvida.</p>".encode("latin-1"))
+        codigo, saida = self.executar("responder", "4942", "--arquivo", str(caminho),
+                                      "--confirmar")
+        self.assertEqual(codigo, 1)
+        self.assertIn("UTF-8", self.json_da_saida(saida)["erro"])
+
+
 class TesteLimpo(unittest.TestCase):
     def test_quebra_de_linha_e_entidades(self):
         texto = sdp_api.limpo("<p>um</p><br/><div>dois &amp; três</div>")

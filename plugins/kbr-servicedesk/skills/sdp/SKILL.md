@@ -1,6 +1,6 @@
 ---
 name: sdp
-description: Painel conversacional dos chamados do ServiceDesk Plus da KINTO — lista os seus chamados, mostra o detalhe de um, adiciona nota, muda status e resolve, sempre com confirmação antes de gravar, responde perguntas livres sobre os chamados (contagens, filtros por período, agrupamentos), e leva ao passo a passo de criar as próprias chaves de acesso quando ainda não há credencial. Use quando o usuário pedir "meus chamados", "abrir o ServiceDesk", "ver o chamado 4942", "responder o solicitante", "resolver o chamado", "SDP", "preciso de acesso ao ServiceDesk", "quantos chamados eu abri em setembro", "lista os chamados criados em 09/2026", ou invocar /kbr-servicedesk:sdp.
+description: Painel conversacional dos chamados do ServiceDesk Plus da KINTO — lista os seus chamados, mostra o detalhe de um, responde ao solicitante por e-mail, anota internamente, muda status e resolve, sempre com confirmação antes de gravar, responde perguntas livres sobre os chamados (contagens, filtros por período, agrupamentos), e leva ao passo a passo de criar as próprias chaves de acesso quando ainda não há credencial. Use quando o usuário pedir "meus chamados", "abrir o ServiceDesk", "ver o chamado 4942", "responder o solicitante", "resolver o chamado", "SDP", "preciso de acesso ao ServiceDesk", "quantos chamados eu abri em setembro", "lista os chamados criados em 09/2026", ou invocar /kbr-servicedesk:sdp.
 ---
 
 # Gestor de chamados — ServiceDesk KINTO
@@ -39,12 +39,23 @@ foi escrito em PT-BR para o usuário — e ofereça o próximo passo.
 | Confirmar acesso | `testar` |
 | Listar | `listar` · `listar --status "On Hold"` · `listar --todos` |
 | Detalhe | `detalhe <nº>` · `detalhe <nº> --notas 20` |
-| Nota | `nota <nº> --arquivo <html> [--visivel-solicitante] [--confirmar]` |
+| Responder | `responder <nº> --arquivo <html> [--para <e-mail>] [--cc <e-mail>] [--so-solicitante] [--assunto "<texto>"] [--confirmar]` |
+| Nota interna | `nota <nº> --arquivo <html> [--visivel-solicitante] [--confirmar]` |
 | Status | `status <nº> "<status>" [--comentario "<motivo>"] [--confirmar]` |
 | Resolver | `resolver <nº> --arquivo <html> [--confirmar]` |
 
-**Sem `--confirmar` os três últimos só simulam** e devolvem a prévia. Use isso para montar a
-confirmação: rode sem a flag, mostre a prévia, pergunte, e repita com a flag.
+**Sem `--confirmar`, `responder`, `nota`, `status` e `resolver` só simulam** e devolvem a
+prévia. Use isso para montar a confirmação: rode sem a flag, mostre a prévia — no caso da
+resposta, mostre também **para quem** ela vai —, pergunte, e repita com a flag.
+
+🔑 **Só a resposta sai por e-mail.** A nota, mesmo com `--visivel-solicitante`, apenas aparece
+no portal: ninguém é avisado. Quando a comunicação é para o solicitante ler, use `responder`.
+A nota serve para registro interno da equipe.
+
+⚠️ **`responder` devolve `confirmado`.** Depois de postar, o script confere se a resposta
+entrou na aba Conversas do chamado. Se vier `confirmado: false`, **mostre o `aviso` como está
+e não reenvie**: abra o chamado e confira primeiro — reenviar manda o mesmo e-mail duas vezes
+para o solicitante.
 
 **`testar` e `listar` devolvem `truncado`.** Quando vier `true`, a busca bateu no teto interno
 de 10 mil chamados e parou antes de o ServiceDesk sinalizar que não havia mais páginas — a
@@ -66,7 +77,7 @@ vá direto para a opção 6.
 
 📋 1. Meus chamados abertos          🔄 4. Mudar status de um chamado
 🔍 2. Ver detalhe de um chamado      ✅ 5. Resolver chamado
-📝 3. Adicionar nota a um chamado    🔑 6. Criar meu acesso ao ServiceDesk
+💬 3. Responder ao solicitante       🔑 6. Criar meu acesso ao ServiceDesk
 
 🧮 7. Pergunta livre sobre os chamados
 
@@ -93,9 +104,21 @@ chamados abertos" no cabeçalho.
    status, datas, descrição e as últimas notas. Se vier `notas_indisponiveis: true`, avise que
    não deu para carregar as notas agora (não é o mesmo que "sem notas") e ofereça tentar de
    novo. Ofereça as ações 3, 4 e 5 sobre esse chamado.
-3. 📝 **Nota** — pergunte o que dizer e **se o solicitante deve ver**. Redija o HTML, grave no
-   diretório temporário da sessão, rode sem `--confirmar`, mostre a prévia em texto, pergunte,
-   e só então repita com `--confirmar`. Apague o arquivo depois.
+3. 💬 **Responder** — pergunte o que dizer. Redija o HTML, grave no diretório temporário da
+   sessão, rode `responder` sem `--confirmar`, mostre a prévia em texto **e a lista de quem
+   vai receber** (`para` e `cc`, que saem do próprio chamado — é o "responder a todos" do
+   portal), pergunte, e só então repita com `--confirmar`. Apague o arquivo depois.
+
+   Confira a resposta: se vier `confirmado: false`, mostre o `aviso` e **não reenvie** antes de
+   olhar o chamado.
+
+   Quem recebe pode ser ajustado antes de enviar: `--so-solicitante` deixa as cópias de fora,
+   `--para` e `--cc` substituem as listas do chamado.
+
+   **Nota interna** — quando o registro não é para o solicitante ler, e sim para a equipe, é
+   `nota` (veja a tabela de comandos). Pergunte antes o que a pessoa quer: comunicar o
+   solicitante (resposta, sai por e-mail) ou registrar internamente (nota, fica no portal).
+   Não use nota achando que ela avisa alguém — não avisa.
 4. 🔄 **Status** — ofereça os status usados na KINTO: Open, In Progress, On Hold, Aguardando
    Aprovação, Resolved, Closed. **On Hold** e **Aguardando Aprovação** exigem `--comentario`
    com o motivo — pergunte antes. Se o técnico digitar outro status de espera por conta própria
@@ -146,7 +169,7 @@ chamados abertos" no cabeçalho.
      --todos` trouxe". Se veio `truncado: true`, avise que a base pode estar incompleta antes
      de responder — não apresente a resposta como definitiva.
 
-## Como escrever nota e conclusão
+## Como escrever resposta, nota e conclusão
 
 - HTML simples: `<p>`, `<ul>`/`<li>`, `<b>`, `<code>`. Nada de CSS, tabela ou imagem.
 - **Primeira pessoa do singular** ("verifiquei", "encontrei", "ajustei"), nunca "identificamos".
@@ -156,6 +179,12 @@ chamados abertos" no cabeçalho.
 - O arquivo precisa estar em **UTF-8**. Se o script recusar por causa da codificação, salve de
   novo escolhendo UTF-8 antes de repetir — não tente adivinhar o conteúdo a partir do erro.
 - Não se preocupe com acentuação no HTML: o script converte para entidades sozinho.
+- **Na resposta, escreva como e-mail** — ela chega na caixa de entrada do solicitante, fora do
+  contexto do portal. Abra com a saudação, diga o que aconteceu e termine com o próximo passo.
+  A nota, ao contrário, é registro: pode ser telegráfica.
+- A nota tem **limite de 3.000 caracteres e o corte é silencioso** — meça antes e quebre em
+  notas sequenciais se passar. Para a resposta esse limite não foi medido; se o texto for longo,
+  confira no chamado o que chegou.
 
 ## Quando algo dá errado
 
@@ -172,6 +201,7 @@ palavras perde essa instrução.
 | "O acesso foi revogado ou o token venceu" | Opção 6, passos 013 a 016 do wizard |
 | "Não encontrei o chamado" | Confirme o número com o usuário |
 | "é de espera: o ServiceDesk exige um comentário" | Pergunte o motivo e repita com `--comentario` |
+| "Não achei para quem responder neste chamado" | O chamado não tem solicitante com e-mail; pergunte o destinatário e repita com `--para` |
 | "não está salvo em UTF-8" | Peça para salvar o arquivo de novo em UTF-8 e repetir |
 | "Não consegui falar com o ServiceDesk" | Rede ou VPN; ofereça tentar de novo |
 | "não parece ter sido o ServiceDesk quem respondeu" | Proxy ou portal cativo na frente; confira a VPN e tente de novo |
