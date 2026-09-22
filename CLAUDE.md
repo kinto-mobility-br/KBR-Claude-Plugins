@@ -1,7 +1,14 @@
 # CLAUDE.md — KBR-Claude-Plugins
 
-Marketplace privado de plugins do Claude Code da KINTO Brasil. Este repositório é ao mesmo
+Marketplace de plugins do Claude Code da KINTO Brasil. Este repositório é ao mesmo
 tempo o catálogo (`.claude-plugin/marketplace.json`) e o monorepo dos plugins (`plugins/`).
+
+> ⚠️ **Repositório PÚBLICO desde 22/09/2026.** Foi aberto para que os plugins pudessem ser
+> instalados por quem não tem acesso ao GitHub corporativo. Isso muda o peso das regras de
+> segredo abaixo: um valor commitado por engano fica exposto no instante do push e permanece
+> no histórico, em forks e em caches — **exige rotação, não apenas remoção**. Antes de publicar
+> qualquer versão, rode a auditoria de segredos (procedimento em
+> `projects/servicedesk-api/kb/draft/rb-auditar-segredos-plugins.md`, no workspace da KINTO).
 
 Design aprovado em `docs/superpowers/specs/2026-09-13-fundacao-servicedesk-design.md`.
 
