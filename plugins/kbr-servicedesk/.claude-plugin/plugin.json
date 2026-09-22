@@ -1,7 +1,7 @@
 {
   "name": "kbr-servicedesk",
   "displayName": "KINTO — ServiceDesk",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Gestor de chamados do ServiceDesk Plus Cloud por menu, com wizard de configuração para quem nunca mexeu com OAuth, e extração de dados para CSV/analytics.",
   "author": {
     "name": "KINTO Brasil — TI"
