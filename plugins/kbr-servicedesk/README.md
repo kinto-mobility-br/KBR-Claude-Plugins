@@ -50,3 +50,21 @@ Python 3.10 ou superior no `PATH` e o plugin `kbr-core` (instalado junto, por de
 
 Documentação local de chamados em `tasks/`, anexos, criação de chamado, e qualquer data center
 da Zoho fora do americano.
+
+> Sobre **anexos**: o caminho já está mapeado e comprovado em uso (subir funciona;
+> remover esbarra no escopo `DELETE`, omitido de propósito). Quem for implementar encontra o
+> formato exato, os erros esperados e os caminhos alternativos já testados na referência técnica
+> abaixo — não precisa redescobrir.
+
+## Referência técnica
+
+A base de conhecimento da API do SDP vive no workspace da KINTO, em `projects/servicedesk-api/`:
+
+| Documento | Cobre |
+|---|---|
+| `kb/draft/gd-conectar-api-servicedesk.md` | Autenticação: Self Client, escopos, refresh token, data center |
+| `kb/draft/ref-sdp-api-uso-real.md` | A API na prática: endpoints usados, armadilhas comprovadas e caminhos alternativos testados |
+
+Fontes oficiais: [documentação da API v3](https://www.manageengine.com/products/service-desk/sdpod-v3-api/)
+e [collection Postman](https://www.postman.com/sdp-cloud/servicedeskplus-cloud-workspace/collection/cj9jjsf/servicedesk-plus-cloud).
+Nenhum dos dois documentos internos replica essas fontes — eles registram o que não está lá.
