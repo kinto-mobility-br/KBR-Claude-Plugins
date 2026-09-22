@@ -120,6 +120,16 @@ Para ver o que já está preenchido sem expor nenhum valor:
 /kbr-core:secrets status
 ```
 
+### Passo a passo detalhado
+
+📄 **[`docs/configurar-servicedesk.md`](docs/configurar-servicedesk.md)** — o que acontece por
+baixo do assistente: o Self Client na Zoho, os escopos e por que o de exclusão fica de fora, a
+troca do código pelo acesso permanente, as duas camadas de permissão que explicam a maioria dos
+erros, e o que fazer em cada mensagem de falha.
+
+Leia se quiser entender o processo, conferir o que foi feito, executar manualmente, ou
+diagnosticar um problema.
+
 ## Atualizar
 
 São **dois** comandos, nessa ordem:
